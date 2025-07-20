@@ -1,6 +1,7 @@
 using UnityEngine;
+using Photon.Pun;
 
-public class RaceManager : MonoBehaviour
+public class RaceManager : MonoBehaviourPun
 {
     private bool gameEnded;
     private float lapProgress;
@@ -19,18 +20,21 @@ public class RaceManager : MonoBehaviour
         lapProgress += deltaProgress;
         previousProgress = progress;
 
-        if (!gameEnded && lapProgress >= 2f) //바퀴수숫자
+        if (!gameEnded && lapProgress >= 1f) //바퀴수숫자
         {
-            GameOver();
+            photonView.RPC(nameof(GameOver), RpcTarget.All);
             gameEnded = true;
         }
 
         Debug.Log($"현재 진행도(progress): {progress:F3}, 변화량(delta): {deltaProgress:F3}, 누적(lap): {lapProgress:F3}");
     }
-
+    
+    [PunRPC]
     private void GameOver()
     {
         Debug.Log("게임 종료!");
         Time.timeScale = 0f;
+        gameEnded = true;
+        UIManager.instance.GameoverUI(true);
     }
 }

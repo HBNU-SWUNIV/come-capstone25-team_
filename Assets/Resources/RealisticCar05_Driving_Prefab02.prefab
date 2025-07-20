@@ -13800,7 +13800,7 @@ GameObject:
   - component: {fileID: 114840631301031388}
   - component: {fileID: 5101617127063575711}
   - component: {fileID: -5771284048525111077}
-  - component: {fileID: -5198300593035151154}
+  - component: {fileID: -2937016033546743479}
   m_Layer: 0
   m_Name: RealisticCar05_Driving_Prefab02
   m_TagString: Player
@@ -13946,12 +13946,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   splineContainer: {fileID: 0}
-  speed: 0.2
+  speed: 0.4
   reverseSpeed: 1
   dashMultiplier: 2
   turnSpeed: 100
   respawnHeightOffset: 5
-  respawnLift: 0.5
+  respawnLift: 0.2
   progress: 0
 --- !u!114 &-5771284048525111077
 MonoBehaviour:
@@ -13972,11 +13972,11 @@ MonoBehaviour:
   OwnershipTransfer: 0
   observableSearch: 2
   ObservedComponents:
-  - {fileID: -5198300593035151154}
+  - {fileID: -2937016033546743479}
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
---- !u!114 &-5198300593035151154
+--- !u!114 &-2937016033546743479
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -13985,10 +13985,30 @@ MonoBehaviour:
   m_GameObject: {fileID: 1871643225004740}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8d68969ffeb29be4484d30dc130e80a9, type: 3}
+  m_Script: {fileID: 11500000, guid: 8efc6b1d64977384eb3405357896c656, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lerpRate: 15
+  m_PositionModel:
+    SynchronizeEnabled: 1
+    TeleportEnabled: 1
+    TeleportIfDistanceGreaterThan: 3
+    InterpolateOption: 2
+    InterpolateMoveTowardsSpeed: 1
+    InterpolateLerpSpeed: 1
+    ExtrapolateOption: 0
+    ExtrapolateSpeed: 1
+    ExtrapolateIncludingRoundTripTime: 1
+    ExtrapolateNumberOfStoredPositions: 1
+  m_RotationModel:
+    SynchronizeEnabled: 1
+    InterpolateOption: 1
+    InterpolateRotateTowardsSpeed: 180
+    InterpolateLerpSpeed: 5
+  m_ScaleModel:
+    SynchronizeEnabled: 1
+    InterpolateOption: 0
+    InterpolateMoveTowardsSpeed: 1
+    InterpolateLerpSpeed: 0
 --- !u!1 &1874366444790696
 GameObject:
   m_ObjectHideFlags: 0

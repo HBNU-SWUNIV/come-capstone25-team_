@@ -6,15 +6,15 @@ using UnityEngine;
 using UnityEngine.Splines;
 
 [RequireComponent(typeof(Rigidbody))]
-public class CarMove : MonoBehaviourPunCallbacks
+public class CarMove : MonoBehaviourPunCallbacks, IPunInstantiateMagicCallback
 {
     public SplineContainer splineContainer;
-    public float speed = 0.2f;
+    public float speed = 0.3f;
     public float reverseSpeed = 1f;
     public float dashMultiplier = 2f;
     public float turnSpeed = 100f;
     public float respawnHeightOffset = 5f; // 리스폰 기준 위치 (스플라인 위치 위로 일정 오프셋 추가)
-    public float respawnLift = 0.5f; // 도로 위로 띄우는 높이
+    public float respawnLift = 0.2f; // 도로 위로 띄우는 높이
 
     [HideInInspector] public float progress;
     private readonly float exitIgnoreDuration = 0.5f; // 리스폰 직후 0.5초간 Exit 무시
@@ -235,7 +235,7 @@ public class CarMove : MonoBehaviourPunCallbacks
         }
     }
 
-    private void OnPhotonInstantiate(PhotonMessageInfo info)
+    public void OnPhotonInstantiate(PhotonMessageInfo info)
     {
         var data = info.photonView.InstantiationData;
         if (data != null && data.Length > 0)

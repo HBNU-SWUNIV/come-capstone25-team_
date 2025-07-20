@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
+using System.Linq;
 
 public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
 {
@@ -223,6 +224,7 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
 
     void SpawnCarOnSpline()
     {
+        if (!PhotonNetwork.IsMasterClient) return;
         if (splineContainer == null)
         {
             Debug.LogWarning("SplineContainer가 연결되지 않았습니다.");
@@ -236,41 +238,43 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         Vector3 up = ((Vector3)upF3).normalized;
         Vector3 right = Vector3.Cross(up, forward).normalized;
 
-        // ── ③ 차선 간격 = 트랙 반지름 기반
-        float laneOffset = splineExtrude.Radius * 0.4f;     // 트랙 폭의 절반
-        float heightLift = splineExtrude.Radius * 0.2f;    // 살짝 띄우기
-
-        Vector3 leftPos = center - right * laneOffset + up * heightLift;
+        // ② 차선 오프셋
+        float laneOffset = splineExtrude.Radius * 0.5f;
+        float heightLift = splineExtrude.Radius * 0.2f;
+        Vector3 leftPos  = center - right * laneOffset + up * heightLift;
         Vector3 rightPos = center + right * laneOffset + up * heightLift;
-        Quaternion rot = Quaternion.LookRotation(forward, up);
+        Quaternion rot   = Quaternion.LookRotation(forward, up);
 
-        // 자동차 생성
-        float carScale = splineExtrude.Radius * 0.15f;
-        if (PhotonNetwork.IsMasterClient)
+        // ③ 공통 스케일
+        float carScale = splineExtrude.Radius * 0.20f;
+
+        // ④ 왼쪽(마스터) 차량 생성
+        GameObject leftCar = PhotonNetwork.Instantiate(
+            player1CarPrefab.name, leftPos, rot, 0, new object[] { carScale });
+        leftCar.transform.localScale = Vector3.one * carScale;
+        InitCar(leftCar);
+
+        // ⑤ 오른쪽(다른 플레이어) 차량 생성
+        GameObject rightCar = PhotonNetwork.Instantiate(
+            player2CarPrefab.name, rightPos, rot, 0, new object[] { carScale });
+        rightCar.transform.localScale = Vector3.one * carScale;
+        InitCar(rightCar);
+
+        // ⑥ 소유권 이전: 첫 번째 ‘다른 플레이어’에게
+        Photon.Realtime.Player other = PhotonNetwork.PlayerListOthers.FirstOrDefault();
+        if (other != null)
+            rightCar.GetComponent<PhotonView>().TransferOwnership(other);
+
+        this.enabled = false;   // 스크립트 비활성화 (중복 스폰 방지)
+    }
+
+    void InitCar(GameObject car)
+    {
+        var mover = car.GetComponent<CarMove>();
+        if (mover != null)
         {
-            GameObject player1Car = PhotonNetwork.Instantiate(player1CarPrefab.name, leftPos, rot, 0, new object[] {carScale});
-            player1Car.transform.parent = spawnRootObject;
-
-            var mover = player1Car.GetComponent<CarMove>();
-            if (mover != null)
-            {
-                mover.progress = 0f;
-                mover.splineContainer = splineContainer;
-            }
+            mover.progress        = 0f;
+            mover.splineContainer = splineContainer;
         }
-        else
-        {
-            GameObject player2Car = PhotonNetwork.Instantiate(player2CarPrefab.name, rightPos, rot, 0,  new object[] {carScale});
-            player2Car.transform.parent = spawnRootObject;
-
-            var mover = player2Car.GetComponent<CarMove>();
-            if (mover != null)
-            {
-                mover.progress = 0f;
-                mover.splineContainer = splineContainer;
-            }
-        }
-
-        this.enabled = false; // 스크립트 비활성화
     }
 }
