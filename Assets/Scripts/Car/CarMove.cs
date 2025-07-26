@@ -6,307 +6,194 @@ using UnityEngine;
 using UnityEngine.Splines;
 
 [RequireComponent(typeof(Rigidbody))]
-public class CarMove : MonoBehaviourPunCallbacks, IPunInstantiateMagicCallback
+public class CarMove : MonoBehaviourPunCallbacks
 {
+    // ────── 주행 파라미터 ──────
+    [Header("Spline & Speed")]
     public SplineContainer splineContainer;
     public float speed = 0.3f;
-    public float reverseSpeed = 1f;
-    public float dashMultiplier = 2f;
     public float turnSpeed = 100f;
-    public float respawnHeightOffset = 5f; // 리스폰 기준 위치 (스플라인 위치 위로 일정 오프셋 추가)
-    public float respawnLift = 0.2f; // 도로 위로 띄우는 높이
 
-    [HideInInspector] public float progress;
-    private readonly float exitIgnoreDuration = 0.5f; // 리스폰 직후 0.5초간 Exit 무시
-    private float ignoreExitTime;
-    private bool isFalling;
-    private Vector3 lastGroundedPosition = Vector3.zero;
-    private float lastGroundedProgress;
+    [Tooltip("리스폰 시 트랙에서 들어올릴 y 오프셋(m)")]
+    public float respawnLift = 0.1f;
+
+    // ────── 리스폰 파라미터 ──────
+    [Header("Off‑Track Respawn")]
+    [Tooltip("트랙 중앙선에서 이 이상 멀어지면 리스폰")] public float offTrackDistance = 2f;
+    [Tooltip("트랙 높이에서 이 이상 위/아래로 벗어나면 리스폰")] public float offTrackHeight = 0.5f;
+    [Tooltip("한 번 리스폰 후 다음 리스폰까지 쿨타임(s)")] public float respawnCooldown = 2f;
+
+    // ────── 내부 상태 ──────
+    [HideInInspector] public float progress;      // 0‒1
     private Rigidbody rb;
-    
-    private RaceManager raceManager; // RaceManager 참조
+    private RaceManager raceManager;
+
+    // 랩 카운트 & 우승
+    private int lapCount = 0;
+    [SerializeField] private int goalLaps = 3;    // 차량별 목표 랩 수
+    private float prevProgress = 0f;
+    private bool finished = false;
+
+    // 스타트 지연
+    private bool raceStarted = false;
+
+    // 디버그 플래그
+    private const bool LOG_EVERY_FRAME = true;
+
+    // 리스폰 관련
+    private float lastSafeProgress = 0f;   // 마지막으로 "온트랙" 판정된 위치
+    private float lastRespawnTime = -Mathf.Infinity;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
-        
-        raceManager = FindObjectOfType<RaceManager>(); // RaceManager 찾기
-        if (raceManager == null)
-        {
-            Debug.LogError("RaceManager가 씬에 존재하지 않습니다!");
-        }
-        else
-        {
-            Debug.Log("RaceManager가 정상적으로 할당되었습니다.");
-        }
+        raceManager ??= FindAnyObjectByType<RaceManager>();
+
+        StartCoroutine(StartRaceAfterDelay());
+    }
+
+    private IEnumerator StartRaceAfterDelay()
+    {
+        yield return new WaitForSeconds(5f);  // 5초 대기 후 레이스 시작
+        raceStarted = true;
     }
 
     private void FixedUpdate()
     {
-        if (splineContainer == null || rb == null) return;
+        if (!photonView.IsMine || splineContainer == null) return;
 
-        if (photonView.IsMine)
-            HandMove();
-        else return;
-        
-        // 바퀴 수 업데이트
-        if (raceManager != null)
+        if (raceStarted)
         {
-            raceManager.UpdateLapProgress(progress);
-            Debug.Log("LapProgress 업데이트");
+            UpdateProgressAndMove();   // 손/키 입력 → 차 이동
+            MaybeRespawn();           // 트랙 이탈 체크
+            DetectLapAndWin();        // 랩·우승 판정
         }
-        else
-        {
-            Debug.LogError("RaceManager가 null입니다!");
-        }
-        //KeyMove();    
+
+        if (LOG_EVERY_FRAME)
+            Debug.Log($"[{photonView.OwnerActorNr}] prog:{progress:F3}  Δ:{progress - prevProgress:+0.000;-0.000}");
     }
 
-    private void OnCollisionExit(Collision collision)
-    {
-        // 리스폰 직후엔 무시
-        if (Time.time < ignoreExitTime) return;
+    // ──────────────────────────────────────────
+    #region Respawn Logic
 
-        if (collision.gameObject.CompareTag("Spline") && !isFalling)
-        {
-            Debug.Log(lastGroundedPosition);
-            Debug.Log(lastGroundedProgress);
-            isFalling = true;
-            StartCoroutine(RespawnAfterDelay(1f));
-        }
-    }
-
-    private void OnCollisionStay(Collision collision)
+    /// <summary>
+    /// 트랙에서 멀어졌는지 점검 후 필요하면 리스폰.
+    /// </summary>
+    private void MaybeRespawn()
     {
-        if (collision.gameObject.CompareTag("Spline"))
+        // 쿨타임
+        if (Time.time - lastRespawnTime < respawnCooldown) return;
+
+        // 현재 진행도 위치의 트랙 표면 좌표 계산
+        splineContainer.Spline.Evaluate(progress, out var splinePosF3, out _, out _);
+        Vector3 splinePos = (Vector3)splinePosF3;
+
+        // 수평 거리 & 수직 높이 차 계산
+        float horizDist = Vector2.Distance(new Vector2(rb.position.x, rb.position.z), new Vector2(splinePos.x, splinePos.z));
+        float vertDist = Mathf.Abs(rb.position.y - splinePos.y);
+
+        bool offTrack = horizDist > offTrackDistance || vertDist > offTrackHeight;
+        if (offTrack)
         {
-            lastGroundedProgress = progress;
-            lastGroundedPosition = transform.position;
-            isFalling = false;
+            RespawnAtProgress(lastSafeProgress);
+            lastRespawnTime = Time.time;
         }
     }
 
-    //void OnCollisionEnter(Collision collision)
-    //{
-    //    if (collision.gameObject.CompareTag("spline"))
-    //    {
-    //        // OnCollisionEnter에서 코루틴 호출
-    //        StartCoroutine(HandleCollision());
-    //    }
-    //}
-
-    //private IEnumerator HandleCollision()
-    //{
-    //    // Rigidbody를 잠시 비활성화
-    //    rb.useGravity = false;
-
-    //    // 1초 대기
-    //    yield return new WaitForSeconds(1f);
-
-    //    // Rigidbody를 다시 활성화
-    //    rb.useGravity = true;
-    //}
-
-    private IEnumerator RespawnAfterDelay(float delay)
+    /// <summary>
+    /// 진행도 t 지점에 차를 리스폰한다.
+    /// </summary>
+    private void RespawnAtProgress(float t)
     {
-        yield return new WaitForSeconds(delay);
-        RespawnAtCurrentProgress();
-    }
+        splineContainer.Spline.Evaluate(t, out var posF3, out var tanF3, out var upF3);
+        Vector3 newPos = (Vector3)posF3 + (Vector3)upF3 * respawnLift;
+        Quaternion newRot = Quaternion.LookRotation((Vector3)tanF3, (Vector3)upF3);
 
-    private void RespawnAtCurrentProgress()
-    {
-        splineContainer.Spline.Evaluate(lastGroundedProgress, out var pos, out var tangent, out var up);
-        var targetPos = (Vector3)pos + ((Vector3)up).normalized * respawnLift;
-        var targetRot = Quaternion.LookRotation(tangent, up);
-
-        StartCoroutine(SmoothRespawn(targetPos, targetRot));
-    }
-
-    private IEnumerator SmoothRespawn(Vector3 targetPosition, Quaternion targetRotation)
-    {
-        var duration = 0.6f;
-        var elapsed = 0f;
-
-        var startPos = rb.position;
-        var startRot = rb.rotation;
-
-        rb.useGravity = false;
+        rb.position = newPos;
+        rb.rotation = newRot;
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
-        while (elapsed < duration)
-        {
-            var t = elapsed / duration;
-            rb.position = Vector3.Lerp(startPos, targetPosition, t);
-            rb.rotation = Quaternion.Slerp(startRot, targetRotation, t);
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        rb.position = targetPosition;
-        rb.rotation = targetRotation;
-
-        yield return new WaitForSeconds(0.1f);
-
-        rb.useGravity = true;
-        isFalling = false;
-        ignoreExitTime = Time.time + exitIgnoreDuration;
-
-        Debug.Log($"[부드러운 리스폰 완료] 위치: {targetPosition}");
+        Debug.Log($"[{photonView.OwnerActorNr}] Respawned at {t:F3}");
     }
 
-    private float CalculateProgressFromPosition(Vector3 position)
+    #endregion
+
+    // ──────────────────────────────────────────
+    #region Lap & Win Detection
+
+    private void DetectLapAndWin()
     {
-        var sampleCount = 300;
-        var closestT = 0f;
-        var closestDist = Mathf.Infinity;
+        float delta = progress - prevProgress;  // 이번 프레임 변화량
 
-        for (var i = 0; i <= sampleCount; i++)
+        // 0.5 이상 감소 ⇒ 1 ➜ 0 래핑(스타트라인 통과)
+        if (!finished && delta < -0.5f)
         {
-            var t = i / (float)sampleCount;
-            splineContainer.Spline.Evaluate(t, out var samplePos, out _, out _);
+            lapCount++;
+            Debug.Log($"[{photonView.OwnerActorNr}] Lap {lapCount}/{goalLaps}");
 
-            var dist = Vector3.Distance(position, samplePos);
-            if (dist < closestDist)
+            if (lapCount >= goalLaps)
             {
-                closestDist = dist;
-                closestT = t;
+                finished = true;
+
+                if (PhotonNetwork.IsMasterClient)
+                {
+                    raceManager.DeclareWinner(PhotonNetwork.LocalPlayer.ActorNumber);
+                }
+                else
+                {
+                    raceManager.photonView.RPC("RPC_RequestDeclareWinner", RpcTarget.MasterClient, PhotonNetwork.LocalPlayer.ActorNumber);
+                }
             }
         }
 
-        return closestT;
+        prevProgress = progress;       // 다음 비교용
     }
 
-    private void HandMove()
+    #endregion
+
+    // ──────────────────────────────────────────
+    #region Movement
+
+    /// <summary>
+    /// 입력(손/키) → 차체 이동 & 진행도 계산.
+    /// </summary>
+    private void UpdateProgressAndMove()
     {
-        if (progress >= 1f) progress -= 1f;
+        // 진행도 계산 (0‒1)
         progress = CalculateProgressFromPosition(transform.position);
+        if (progress >= 1f) progress -= 1f;
 
-        // 오른손이 가리키는 방향으로 이동하는 오브젝트
-        if (HandJointUtils.TryGetJointPose(TrackedHandJoint.IndexTip, Handedness.Right, out var rightHandPos))
+        lastSafeProgress = progress; // 온트랙으로 판정된 가장 최근 진행도 저장
+
+        // ──── 손/키 입력 → 이동(예시는 손 추적) ────
+        if (HandJointUtils.TryGetJointPose(TrackedHandJoint.IndexTip, Handedness.Right, out var rightHand))
         {
-            var handPos = rightHandPos; // 오른손 위치
-
-            var moveDir = handPos.Forward; // 이동 방향
-            moveDir.y = 0; // y축으로 이동 금지
-            moveDir.Normalize();
-
-            if (moveDir != Vector3.zero)
+            Vector3 dir = rightHand.Forward; dir.y = 0; dir.Normalize();
+            if (dir != Vector3.zero)
             {
-                var targetRotation = Quaternion.LookRotation(moveDir);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * 1.5f);
+                Quaternion targetRot = Quaternion.LookRotation(dir);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.fixedDeltaTime * 1.5f);
             }
-
             rb.linearVelocity = transform.forward * speed;
         }
-        else
-        {
-            // 손 인식 실패 시 모든 움직임 정지 및 회전 유지
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-            return;
-        }
-
-        var rayOrigin = transform.position + Vector3.up * 0.1f; // 바닥 체크를 위한 Ray 시작 위치
-        Vector3 moveDirection;
-        if (Physics.Raycast(rayOrigin, Vector3.down, out var slopeHit, 2f)) // 도로가 있는지 확인
-        {
-            var groundNormal = slopeHit.normal; // 도로의 기울기 벡터
-            moveDirection = Vector3.ProjectOnPlane(transform.forward, groundNormal).normalized;
-
-            var angle = Vector3.Angle(transform.up, groundNormal);
-            if (angle < 60f && !isFalling)
-            {
-                var targetRotation = Quaternion.LookRotation(moveDirection, groundNormal);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * 5f);
-            }
-
-            if (angle > 60f)
-                if (!isFalling)
-                {
-                    isFalling = true;
-                    StartCoroutine(RespawnAfterDelay(1f));
-                }
-            //Debug.Log("기울기 각도: " + angle);
-        }
-        else
-        {
-            moveDirection = transform.forward; // 공중일 경우엔 원래 방향
-        }
+        else rb.linearVelocity = Vector3.zero;
     }
 
-    public void OnPhotonInstantiate(PhotonMessageInfo info)
+    private float CalculateProgressFromPosition(Vector3 pos)
     {
-        var data = info.photonView.InstantiationData;
-        if (data != null && data.Length > 0)
+        const int SAMPLES = 300;
+        float bestT = 0f, bestDist = float.MaxValue;
+
+        for (int i = 0; i <= SAMPLES; i++)
         {
-            float s = (float)data[0];
-            transform.localScale = Vector3.one * s;
+            float t = i / (float)SAMPLES;
+            splineContainer.Spline.Evaluate(t, out var samplePos, out _, out _);
+            float d = Vector3.Distance(pos, samplePos);
+            if (d < bestDist) { bestDist = d; bestT = t; }
         }
+        return bestT;
     }
 
-    private void KeyMove()
-    {
-        // 현재 스플라인 위치 계산 (한 번만 호출)
-        splineContainer.Spline.Evaluate(progress, out var pos, out var tangent, out var up);
-
-
-        var vInput = Input.GetAxis("Vertical"); // W/S
-        var hInput = Input.GetAxis("Horizontal"); // A/D
-
-        // 대쉬 포함한 현재 속도 계산
-        var currentSpeed = vInput > 0 ? speed : reverseSpeed;
-        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) currentSpeed *= dashMultiplier;
-
-        progress = CalculateProgressFromPosition(transform.position);
-
-        if (progress >= 1f) progress -= 1f;
-
-        // 좌우 회전
-        var turn = hInput * turnSpeed * Time.fixedDeltaTime;
-        transform.Rotate(0, turn, 0);
-
-        Vector3 moveDirection;
-        var rayOrigin = transform.position + Vector3.up * 0.1f; // 바닥 체크를 위한 Ray 시작 위치
-
-        if (Physics.Raycast(rayOrigin, Vector3.down, out var slopeHit, 2f)) // 도로가 있는지 확인
-        {
-            var groundNormal = slopeHit.normal; // 도로의 기울기 벡터
-            moveDirection = Vector3.ProjectOnPlane(transform.forward, groundNormal).normalized;
-
-            // 회전도 도로 경사에 맞춰 보간
-            var targetRotation = Quaternion.LookRotation(moveDirection, groundNormal);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * 5f);
-
-            var angle = Vector3.Angle(transform.up, groundNormal);
-            if (angle > 60f)
-                if (!isFalling)
-                {
-                    isFalling = true;
-                    StartCoroutine(RespawnAfterDelay(1f));
-                }
-            //Debug.Log("기울기 각도: " + angle);
-        }
-        else
-        {
-            moveDirection = transform.forward; // 공중일 경우엔 원래 방향
-        }
-
-
-        // velocity를 사용하여 속도 설정 (AddForce 없이 직접 설정)
-        var forward = transform.forward;
-        if (vInput == 0)
-            rb.linearVelocity = Vector3.zero; // 이동하지 않으면 속도를 0으로 설정
-        else if (vInput > 0)
-            rb.linearVelocity = forward * currentSpeed; // 일정 속도로 이동
-        else
-            rb.linearVelocity = -forward * currentSpeed; // 일정 속도로 이동
-        //rb.AddForce(forward * (vInput * currentSpeed * 10f));
-
-        // progress가 1을 넘으면 0으로 돌아가도록 설정
-        if (progress >= 1f) progress -= 1f; // progress가 1를 넘으면 0부터 다시 시작
-
-        // 스플라인 방향 디버그 표시
-        Debug.DrawLine(transform.position, transform.position + (Vector3)tangent, Color.yellow);
-    }
+    #endregion
 }

@@ -184,7 +184,7 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         float totalLength = SplineUtility.CalculateLength(spline, localToWorld);
         if (splineExtrude != null)
         {
-            splineExtrude.Radius = Mathf.Clamp(totalLength * 0.05f, 0.1f, 5f);
+            splineExtrude.Radius = Mathf.Clamp(totalLength * 0.055f, 0.1f, 5f);
         }
 
         // SplineExtrude의 메쉬에 MeshCollider 자동 추가
@@ -239,14 +239,14 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         Vector3 right = Vector3.Cross(up, forward).normalized;
 
         // ② 차선 오프셋
-        float laneOffset = splineExtrude.Radius * 0.5f;
-        float heightLift = splineExtrude.Radius * 0.2f;
+        float laneOffset = splineExtrude.Radius * 0.2f;
+        float heightLift = splineExtrude.Radius * 0.1f;
         Vector3 leftPos  = center - right * laneOffset + up * heightLift;
         Vector3 rightPos = center + right * laneOffset + up * heightLift;
         Quaternion rot   = Quaternion.LookRotation(forward, up);
 
         // ③ 공통 스케일
-        float carScale = splineExtrude.Radius * 0.20f;
+        float carScale = splineExtrude.Radius * 0.125f;
 
         // ④ 왼쪽(마스터) 차량 생성
         GameObject leftCar = PhotonNetwork.Instantiate(

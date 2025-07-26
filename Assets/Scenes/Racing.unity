@@ -164,7 +164,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50eada435d5218347a10f1f81cda3faf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  totalLaps: 1
+  totalLaps: 2
 --- !u!114 &4570519
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1084,7 +1084,7 @@ MonoBehaviour:
   - m_EditModeType: 1
     m_Knots: []
     m_MetaData: []
-    m_Closed: 0
+    m_Closed: 1
     m_IntData:
       m_Data: []
     m_FloatData:
@@ -1109,10 +1109,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Container: {fileID: 582734155}
   m_RebuildOnSplineChange: 1
-  m_RebuildFrequency: 999999
+  m_RebuildFrequency: 20
   m_UpdateColliders: 1
   m_Sides: 8
-  m_SegmentsPerUnit: 25
+  m_SegmentsPerUnit: 3
   m_Capped: 0
   m_Radius: 0.3
   m_Range: {x: 0, y: 1}

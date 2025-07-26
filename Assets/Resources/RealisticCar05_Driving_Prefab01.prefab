@@ -1692,7 +1692,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.05, y: 0.05, z: 0.05}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 4976523218961866}
@@ -1821,12 +1821,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   splineContainer: {fileID: 0}
   speed: 0.4
-  reverseSpeed: 1
-  dashMultiplier: 2
   turnSpeed: 100
-  respawnHeightOffset: 5
   respawnLift: 0.1
+  offTrackDistance: 2
+  offTrackHeight: 0.5
+  respawnCooldown: 2
   progress: 0
+  goalLaps: 2
 --- !u!114 &3027228673675281356
 MonoBehaviour:
   m_ObjectHideFlags: 0

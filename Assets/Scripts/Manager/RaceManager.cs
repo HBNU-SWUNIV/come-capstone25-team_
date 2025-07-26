@@ -1,40 +1,35 @@
-using UnityEngine;
 using Photon.Pun;
+using UnityEngine;
 
 public class RaceManager : MonoBehaviourPun
 {
-    private bool gameEnded;
-    private float lapProgress;
-    private float previousProgress;
+    [SerializeField] private int totalLaps = 3;   // 목표 랩 수
+    private bool gameEnded = false;
 
-    // 게임 종료 처리
-    public void UpdateLapProgress(float progress)
+    /// <summary>마스터가 직접 호출(또는 RPC로 요청받아 호출)</summary>
+    public void DeclareWinner(int actorNumber)
     {
         if (gameEnded) return;
 
-        // 누적 진행도 계산
-        var deltaProgress = progress - previousProgress;
-        if (deltaProgress < -0.5f) deltaProgress += 1f;
-        else if (deltaProgress > 0.5f) deltaProgress -= 1f;
-
-        lapProgress += deltaProgress;
-        previousProgress = progress;
-
-        if (!gameEnded && lapProgress >= 1f) //바퀴수숫자
-        {
-            photonView.RPC(nameof(GameOver), RpcTarget.All);
-            gameEnded = true;
-        }
-
-        Debug.Log($"현재 진행도(progress): {progress:F3}, 변화량(delta): {deltaProgress:F3}, 누적(lap): {lapProgress:F3}");
+        Debug.Log($"[RaceManager] ▶ 플레이어 {actorNumber} 우승 선언");
+        photonView.RPC(nameof(GameOver), RpcTarget.All);
+        gameEnded = true;
     }
-    
+
+    /// <summary>클라이언트 → 마스터 : 우승 요청</summary>
+    [PunRPC]
+    private void RPC_RequestDeclareWinner(int actorNumber)
+        => DeclareWinner(actorNumber);
+
+    /// <summary>모든 클라이언트에서 실행 : 실제 게임 종료</summary>
     [PunRPC]
     private void GameOver()
     {
-        Debug.Log("게임 종료!");
-        Time.timeScale = 0f;
+        if (gameEnded) return;
         gameEnded = true;
-        UIManager.instance.GameoverUI(true);
+
+        Debug.Log("[RaceManager] ▶ GameOver RPC 수신, Time.timeScale=0");
+        Time.timeScale = 0f;
+        // UI 처리 …
     }
 }
