@@ -1821,7 +1821,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   splineContainer: {fileID: 0}
   speed: 0.4
-  turnSpeed: 100
   respawnLift: 0.1
   offTrackDistance: 2
   offTrackHeight: 0.5
