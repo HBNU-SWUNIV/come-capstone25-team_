@@ -46,6 +46,12 @@ public class CarMove : MonoBehaviourPunCallbacks
     {
         rb = GetComponent<Rigidbody>();
         raceManager ??= FindAnyObjectByType<RaceManager>();
+        progress = 0f;
+
+        if (splineContainer == null)
+        {
+            splineContainer = FindAnyObjectByType<SplineContainer>();
+        }
 
         StartCoroutine(StartRaceAfterDelay());
     }

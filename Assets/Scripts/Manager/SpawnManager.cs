@@ -270,8 +270,6 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         Photon.Realtime.Player other = PhotonNetwork.PlayerListOthers.FirstOrDefault();
         if (other != null)
             rightCar.GetComponent<PhotonView>().TransferOwnership(other);
-
-        this.enabled = false;   // 스크립트 비활성화 (중복 스폰 방지)
     }
 
     void InitCar(GameObject car)
