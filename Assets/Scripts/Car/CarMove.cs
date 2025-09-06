@@ -199,4 +199,19 @@ public class CarMove : MonoBehaviourPunCallbacks
     }
 
     #endregion
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Item"))
+        {
+            Debug.Log("아이템 획득!");
+            Destroy(other.gameObject);
+
+            ItemEffectHandler effectHandler = GetComponent<ItemEffectHandler>();
+            if (effectHandler != null)
+            {
+                effectHandler.ApplyItemEffect();
+            }
+        }
+    }
 }
