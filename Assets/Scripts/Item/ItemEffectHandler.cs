@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
+using Photon.Pun;
 
-public class ItemEffectHandler : MonoBehaviour
+public class ItemEffectHandler : MonoBehaviourPun
 {
     private CarMove carMove;
     private int goldCount = 0;
@@ -37,8 +38,9 @@ public class ItemEffectHandler : MonoBehaviour
             Destroy(currentItemVisual);
         }
 
-        currentItemVisual = Instantiate(itemPrefab, itemDisplayPoint.position, itemDisplayPoint.rotation, itemDisplayPoint);
-        currentItemVisual.transform.localScale *= 0.5f;
+        currentItemVisual = PhotonNetwork.Instantiate(itemPrefab.name, itemDisplayPoint.position, itemDisplayPoint.rotation);
+        currentItemVisual.transform.parent = itemDisplayPoint.transform;
+        currentItemVisual.transform.localScale = carMove.GetSize() * 15f;
 
         // 표시 시간 후 자동 제거
         StartCoroutine(RemoveItemVisualAfter(duration));
