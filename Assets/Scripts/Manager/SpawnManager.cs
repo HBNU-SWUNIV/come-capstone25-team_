@@ -293,6 +293,17 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         {
             Debug.LogWarning("❌ ItemSpawner를 찾지 못했습니다.");
         }
+
+        ObstacleSpawner obstacleSpawner = FindObjectOfType<ObstacleSpawner>();
+        if (obstacleSpawner != null)
+        {
+            Debug.Log("👉 ObstacleSpawner.SpawnObstacles() 호출됨");
+            obstacleSpawner.SpawnObstacles();
+        }
+        else
+        {
+            Debug.LogWarning("❌ ObstacleSpawner를 찾지 못했습니다.");
+        }
     }
 
     void InitCar(GameObject car)
