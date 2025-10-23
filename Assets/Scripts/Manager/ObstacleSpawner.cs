@@ -71,7 +71,7 @@ public class ObstacleSpawner : MonoBehaviourPun
             Vector3 right = Vector3.Cross(forward, up).normalized;
 
             float lateralOffset = UnityEngine.Random.Range(-roadWidth * 0.45f, roadWidth * 0.45f);
-            Vector3 spawnPos = center + right * lateralOffset + up * heightOffset;
+            Vector3 spawnPos = center + right * lateralOffset;
 
             GameObject obj = PhotonNetwork.Instantiate(obstaclePrefab.name, spawnPos, Quaternion.LookRotation(forward));
             obj.transform.parent = this.transform;

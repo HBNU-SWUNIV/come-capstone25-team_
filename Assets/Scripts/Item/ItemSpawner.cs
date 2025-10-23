@@ -52,7 +52,7 @@ public class ItemSpawner : MonoBehaviourPun
             {
                 float offsetAmount = -roadWidth / 2f + spacing * (posIndex + 0.5f);
                 Vector3 offset = right * offsetAmount;
-                Vector3 spawnPos = center + offset + Vector3.up * 0.02f;
+                Vector3 spawnPos = center + offset;
 
                 GameObject obj = PhotonNetwork.Instantiate(itemPrefab.name, spawnPos, Quaternion.identity);
                 Debug.Log($"아이템 생성 위치: {spawnPos:F2} (7등분 중 {posIndex + 1}번째 지점)");

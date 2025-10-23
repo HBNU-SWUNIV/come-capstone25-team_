@@ -220,7 +220,7 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         float totalLength = SplineUtility.CalculateLength(spline, localToWorld);
         if (splineExtrude != null)
         {
-            splineExtrude.Radius = Mathf.Clamp(totalLength * 0.055f, 0.1f, 5f);
+            splineExtrude.Radius = Mathf.Clamp(totalLength * 0.066f, 0.1f, 5f);
         }
 
         // SplineExtrude의 메쉬에 MeshCollider 자동 추가
