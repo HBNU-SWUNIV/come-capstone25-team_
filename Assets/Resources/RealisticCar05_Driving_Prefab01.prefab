@@ -1822,7 +1822,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   splineContainer: {fileID: 0}
-  speed: 0.4
+  speed: 0.3
   respawnLift: 0.1
   offTrackDistance: 2
   offTrackHeight: 0.5

@@ -35,6 +35,10 @@ namespace Microsoft.MixedReality.WorldLocking.Core
         {
             get
             {
+                if (this == null)
+                {
+                    return Pose.identity;
+                }
                 return transform.GetGlobalPose();
             }
         }

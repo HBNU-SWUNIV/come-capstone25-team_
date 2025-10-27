@@ -509,11 +509,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2565263485106893872, guid: 445915dc8698413468747c2fb539f935, type: 3}
       propertyPath: managedReferences[4].OnClicked.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: StartGame
+      value: LoadRacingScene
       objectReference: {fileID: 0}
     - target: {fileID: 2565263485106893872, guid: 445915dc8698413468747c2fb539f935, type: 3}
       propertyPath: managedReferences[4].OnClicked.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: TitleManager, Assembly-CSharp
+      value: SceneNavigator, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 2565263485106893872, guid: 445915dc8698413468747c2fb539f935, type: 3}
       propertyPath: managedReferences[4].OnClicked.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -701,7 +701,7 @@ GameObject:
   - component: {fileID: 838518965}
   - component: {fileID: 838518966}
   m_Layer: 0
-  m_Name: Title Manager
+  m_Name: Scene Navigator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

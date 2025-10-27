@@ -1,5 +1,17 @@
-﻿using Microsoft.MixedReality.Toolkit;
+﻿// SpawnManager.cs
+// ------------------------------------------------------------
+// 변경 요약
+//  1) 트랙 생성 후: 물체인식 표시 전부 제거 + 선택 큐브 전부 삭제 + 추가 입력 차단
+//     - 표시 제거: TablePlaneDetector.ClearDetectedVisuals() 호출
+//     - 큐브 삭제: DestroySpawnedCubesMaster() (마스터가 일괄 파괴) + 로컬 보정 삭제
+//     - 입력 차단: trackFinalized 플래그 + 입력 핸들러 Unregister
+//  2) 1인 테스트(singlePlayerMode) 시, 턴 규칙 우회해 연속 스폰 가능 (유지)
+//  3) [원래 코드] 트랙 전 SpatialAwarenessSystem.Disable() 하던 부분 주석 처리
+// ------------------------------------------------------------
+
+using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.Input;
+using Microsoft.MixedReality.Toolkit.SpatialAwareness;   // Observer 제어
 using Microsoft.MixedReality.WorldLocking.Core;
 using Photon.Pun;
 using System.Collections;
@@ -14,10 +26,11 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
     public GameObject cubePrefab; // 생성할 프리팹
 
     private List<Transform> selectedObjects = new List<Transform>();
-    private List<int> spawnedObjectIDs = new List<int>(); // 선택한 오브젝트들
+    private List<int> spawnedObjectIDs = new List<int>(); // 생성 큐브들의 PhotonViewID
+    public List<int> SpawnedObjectIDs => spawnedObjectIDs;
     public SplineContainer splineContainer; // 스플라인 연결용
 
-    public Transform spawnRootObject; // 생성할 루트 오브젝트
+    public Transform spawnRootObject; // 생성할 루트 오브젝트(선택 큐브의 부모)
 
     public GameObject player1CarPrefab;
     public GameObject player2CarPrefab;
@@ -26,6 +39,8 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
     public PhysicsMaterial physicMaterial;
     SplineExtrude splineExtrude;
 
+    // 트랙 완성 후 추가 입력/스폰 차단 플래그
+    private bool trackFinalized = false;
 
     private void Awake()
     {
@@ -39,69 +54,60 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
 
     public void OnPointerClicked(MixedRealityPointerEventData eventData)
     {
+        // 트랙 완성 후에는 입력 차단
+        if (trackFinalized) return;
 
-    }
-    public void OnPointerDragged(MixedRealityPointerEventData eventData)
-    {
-
-    }
-    public void OnPointerUp(MixedRealityPointerEventData eventData)
-    {
-
-    }
-
-    // 에어탭 했을 때
-    public void OnPointerDown(MixedRealityPointerEventData eventData)
-    {
         // 예외 처리
         if (!AnchorTransferStatus.isAnchorImported) return;
-        if (eventData.Pointer == null || eventData.Pointer.Result == null || eventData.Pointer.Result.Details.Object == null || eventData.Handedness.IsLeft())
+        if (eventData.Pointer == null || eventData.Pointer.Result == null || eventData.Pointer.Result.Details.Object == null || eventData.Handedness.IsRight())
         {
             return;
         }
 
-
-        // 충돌한 오브젝트가 Spatial Awareness일 때
+        // 충돌한 오브젝트가 Spatial Awareness일 때만 스폰
         if (eventData.Pointer.Result.Details.Object.layer.Equals(LayerMask.NameToLayer("Spatial Awareness")))
         {
-            Vector3 lockedPosition = eventData.Pointer.Result.Details.Point; // Locked 공간 기준 위치
+            Vector3 lockedPosition = eventData.Pointer.Result.Details.Point; // Locked 기준 위치
             Quaternion lockedRotation = Quaternion.LookRotation(eventData.Pointer.Result.Details.Normal);
 
-            // FrozenFromLocked 행렬 얻기
+            // FrozenFromLocked 행렬
             var manager = WorldLockingManager.GetInstance();
             var frozenFromLocked = manager.FrozenFromLocked;
             Matrix4x4 frozenFromLockedMatrix = Matrix4x4.TRS(frozenFromLocked.position, frozenFromLocked.rotation, Vector3.one);
 
-            // 클릭한 위치를 직접 Frozen 공간으로 변환
+            // Frozen 공간으로 변환
             Vector3 frozenPosition = frozenFromLockedMatrix.MultiplyPoint3x4(lockedPosition);
 
-
-            // 물체 생성 (번갈아가며 생성)
             if (spawnedObjectIDs.Count % 2 == 0 && PhotonNetwork.IsMasterClient || spawnedObjectIDs.Count % 2 == 1 && !PhotonNetwork.IsMasterClient)
             {
                 GameObject cube = PhotonNetwork.Instantiate(cubePrefab.name, frozenPosition, lockedRotation);
                 cube.transform.parent = spawnRootObject;
-                // 물체의 ViewID를 파라미터로 설정
                 photonView.RPC("SpawnObject", RpcTarget.AllBuffered, cube.GetComponent<PhotonView>().ViewID);
             }
             else return;
-
-            //// 큐브 크기 조정
-            //Vector3 originScale = Vector3.one * 0.1f;
-            //cube.transform.localScale = originScale * Mathf.Max(1f, eventData.Pointer.Result.Details.RayDistance);
         }
     }
+    public void OnPointerDragged(MixedRealityPointerEventData eventData) { }
+    public void OnPointerUp(MixedRealityPointerEventData eventData) { }
+
+    // 에어탭 했을 때 (왼손: 원하는 곳에 선택 큐브 스폰)
+    public void OnPointerDown(MixedRealityPointerEventData eventData) { }
 
     // 물체 생성 및 저장
     [PunRPC]
-    private void SpawnObject(int spawnedObjectID)
+    public void SpawnObject(int spawnedObjectID)
     {
         spawnedObjectIDs.Add(spawnedObjectID); // 물체 저장
+
         // 생성된 물체가 최대 물체 생성 개수와 동일한 경우
         if (UIManager.instance.maxSpawnObjectCount == spawnedObjectIDs.Count)
         {
-            CoreServices.SpatialAwarenessSystem.Disable(); // 공간 비활성화
-            photonView.RPC("ViewIDToTransform", RpcTarget.AllBuffered, spawnedObjectIDs.ToArray()); // ViewID를 Transform으로 변환 (마스터 클라이언트에서만)
+            // ---------------------- [원래 코드] ----------------------
+            // CoreServices.SpatialAwarenessSystem.Disable(); // 공간 비활성화 (트랙 전 비활성화 문제) → 주석
+            // ---------------------------------------------------------
+
+            // ViewID를 Transform으로 변환 후 스플라인 생성
+            photonView.RPC("ViewIDToTransform", RpcTarget.AllBuffered, spawnedObjectIDs.ToArray());
         }
     }
 
@@ -190,7 +196,7 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         float totalLength = SplineUtility.CalculateLength(spline, localToWorld);
         if (splineExtrude != null)
         {
-            splineExtrude.Radius = Mathf.Clamp(totalLength * 0.055f, 0.1f, 5f);
+            splineExtrude.Radius = Mathf.Clamp(totalLength * 0.066f, 0.1f, 5f);
         }
 
         // SplineExtrude의 메쉬에 MeshCollider 자동 추가
@@ -208,13 +214,47 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
 
         Debug.Log("Spline 생성 완료");
 
-        // 오브젝트 숨기기
-        foreach (var obj in selectedObjects)
-        {
-            obj.gameObject.SetActive(false);
-        }
+        // ---------------------- [원래 코드] 선택 큐브 숨김 ----------------------
+        // foreach (var obj in selectedObjects)
+        //     obj.gameObject.SetActive(false);
+        // ----------------------------------------------------------------------
+
+        // ---------------------- [새 코드] 트랙 생성 후 정리 & 입력 차단 ----------------------
+        FinalizeTrackAndCleanup();
+        // ----------------------------------------------------------------------
 
         StartCoroutine(WaitAndSpawnCar());
+    }
+
+    // 트랙 완성 후: 표시 제거 + 큐브 파괴(마스터) + 입력 차단 + Observer 정리
+    private void FinalizeTrackAndCleanup()
+    {
+        // 1) 평면/물체 인식 표시물 전체 제거 (Hull/라인/점/ HullMarkerCube)
+        var detector = FindObjectOfType<TablePlaneDetector>();
+        if (detector != null)
+        {
+            detector.ClearDetectedVisuals(); // ← Hull만 지우려면 ClearHulls()
+        }
+
+        // 2) 스폰된 큐브 전부 파괴(마스터에게만 요청)
+        photonView.RPC("DestroySpawnedCubesMaster", RpcTarget.MasterClient, spawnedObjectIDs.ToArray());
+
+        // 4) 내부 상태 초기화
+        selectedObjects.Clear();
+        spawnedObjectIDs.Clear();
+
+        // 5) 이후 입력 차단
+        trackFinalized = true;
+        CoreServices.InputSystem?.UnregisterHandler<IMixedRealityPointerHandler>(this);
+
+        // 6) 공간 메쉬: Occlusion + Suspend (렌더 OFF, 관찰 정지)
+        var observer = CoreServices.GetSpatialAwarenessSystemDataProvider<IMixedRealitySpatialAwarenessMeshObserver>();
+        if (observer != null)
+        {
+            observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.Occlusion;
+        }
+            
+        CoreServices.SpatialAwarenessSystem.Disable();
     }
 
     private IEnumerator WaitAndSpawnCar()
@@ -237,7 +277,7 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
             return;
         }
 
-        // ── ① 시작점 정보
+        // ① 시작점 정보
         splineContainer.Spline.Evaluate(0f, out float3 posF3, out float3 tanF3, out float3 upF3);
         Vector3 center = (Vector3)posF3;
         Vector3 forward = ((Vector3)tanF3).normalized;
@@ -258,19 +298,18 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         GameObject leftCar = PhotonNetwork.Instantiate(
             player1CarPrefab.name, leftPos, rot, 0, new object[] { carScale });
         leftCar.transform.localScale = Vector3.one * carScale;
-        InitCar(leftCar);
+        InitCar(leftCar, splineExtrude);
 
         // ⑤ 오른쪽(다른 플레이어) 차량 생성
         GameObject rightCar = PhotonNetwork.Instantiate(
             player2CarPrefab.name, rightPos, rot, 0, new object[] { carScale });
         rightCar.transform.localScale = Vector3.one * carScale;
-        InitCar(rightCar);
+        InitCar(rightCar, splineExtrude);
 
-        // ⑥ 소유권 이전: 첫 번째 ‘다른 플레이어’에게
+        // ⑥ 소유권 이전: 첫 번째 다른 플레이어에게
         Photon.Realtime.Player other = PhotonNetwork.PlayerListOthers.FirstOrDefault();
         if (other != null)
             rightCar.GetComponent<PhotonView>().TransferOwnership(other);
-
 
         StartCoroutine(CheckSpawnAllCar(leftCar, rightCar));
     }
@@ -286,33 +325,66 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         ItemSpawner spawner = FindObjectOfType<ItemSpawner>();
         if (spawner != null)
         {
-            Debug.Log("👉 ItemSpawner.SpawnItemsWithDelay() 호출됨");
+            Debug.Log("ItemSpawner.SpawnItemsWithDelay() 호출됨");
             spawner.SpawnItemsWithDelay(); // 코루틴으로 호출
         }
         else
         {
-            Debug.LogWarning("❌ ItemSpawner를 찾지 못했습니다.");
+            Debug.LogWarning("ItemSpawner를 찾지 못했습니다.");
         }
 
         ObstacleSpawner obstacleSpawner = FindObjectOfType<ObstacleSpawner>();
         if (obstacleSpawner != null)
         {
-            Debug.Log("👉 ObstacleSpawner.SpawnObstacles() 호출됨");
+            Debug.Log("ObstacleSpawner.SpawnObstacles() 호출됨");
             obstacleSpawner.SpawnObstacles();
         }
         else
         {
-            Debug.LogWarning("❌ ObstacleSpawner를 찾지 못했습니다.");
+            Debug.LogWarning("ObstacleSpawner를 찾지 못했습니다.");
         }
     }
 
-    void InitCar(GameObject car)
+    void InitCar(GameObject car, SplineExtrude splineExtrude)
     {
         var mover = car.GetComponent<CarMove>();
         if (mover != null)
         {
             mover.progress = 0f;
             mover.splineContainer = splineContainer;
+            mover.speed = splineExtrude.Radius;
+        }
+    }
+
+    // 헐/마커 선택 경로에서 호출: 선택 포인트를 스폰으로 반영
+    public void AddPointFromPlaneDetector(Vector3 frozenPosition, Quaternion frozenRotation)
+    {
+        // 트랙 완성 후에는 입력 차단
+        if (trackFinalized) return;
+
+        GameObject cube = PhotonNetwork.Instantiate(cubePrefab.name, frozenPosition, frozenRotation);
+        cube.transform.parent = spawnRootObject;
+
+        // 기존 로직 연결 (스플라인 생성, 차량/아이템 스폰)
+        photonView.RPC("SpawnObject", RpcTarget.AllBuffered, cube.GetComponent<PhotonView>().ViewID);
+        
+        cube.SetActive(false); // 스플라인 지점 등록 후 물체 비활성화 -> 중복으로 물체 보이는 문제 해결
+    }
+
+    // 마스터가 전 클라이언트에 대해 스폰된 선택 큐브를 일괄 파괴
+    [PunRPC]
+    private void DestroySpawnedCubesMaster(int[] viewIDs)
+    {
+        if (!PhotonNetwork.IsMasterClient) return; // 안전 가드
+
+        foreach (var id in viewIDs)
+        {
+            var pv = PhotonView.Find(id);
+            if (pv != null && pv.gameObject != null)
+            {
+                Debug.Log($"[RPC] Destroy cube viewID={id}");
+                PhotonNetwork.Destroy(pv.gameObject);
+            }
         }
     }
 }
