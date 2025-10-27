@@ -239,9 +239,6 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         // 2) 스폰된 큐브 전부 파괴(마스터에게만 요청)
         photonView.RPC("DestroySpawnedCubesMaster", RpcTarget.MasterClient, spawnedObjectIDs.ToArray());
 
-        // 3) 혹시 남은 로컬 큐브/마커 보정 삭제 (오너십 꼬임 대비)
-        RemoveLocalCubesFallback();
-
         // 4) 내부 상태 초기화
         selectedObjects.Clear();
         spawnedObjectIDs.Clear();
@@ -255,8 +252,9 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         if (observer != null)
         {
             observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.Occlusion;
-            observer.Suspend();
         }
+            
+        CoreServices.SpatialAwarenessSystem.Disable();
     }
 
     private IEnumerator WaitAndSpawnCar()
@@ -300,13 +298,13 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         GameObject leftCar = PhotonNetwork.Instantiate(
             player1CarPrefab.name, leftPos, rot, 0, new object[] { carScale });
         leftCar.transform.localScale = Vector3.one * carScale;
-        InitCar(leftCar);
+        InitCar(leftCar, splineExtrude);
 
         // ⑤ 오른쪽(다른 플레이어) 차량 생성
         GameObject rightCar = PhotonNetwork.Instantiate(
             player2CarPrefab.name, rightPos, rot, 0, new object[] { carScale });
         rightCar.transform.localScale = Vector3.one * carScale;
-        InitCar(rightCar);
+        InitCar(rightCar, splineExtrude);
 
         // ⑥ 소유권 이전: 첫 번째 다른 플레이어에게
         Photon.Realtime.Player other = PhotonNetwork.PlayerListOthers.FirstOrDefault();
@@ -347,13 +345,14 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         }
     }
 
-    void InitCar(GameObject car)
+    void InitCar(GameObject car, SplineExtrude splineExtrude)
     {
         var mover = car.GetComponent<CarMove>();
         if (mover != null)
         {
             mover.progress = 0f;
             mover.splineContainer = splineContainer;
+            mover.speed = splineExtrude.Radius;
         }
     }
 
@@ -388,34 +387,4 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
             }
         }
     }
-
-    // 네트워크 파괴 후 혹시 씬에 남은 큐브/마커가 있으면 보정 삭제 (오너십 꼬임 대비)
-    private void RemoveLocalCubesFallback()
-    {
-        if (spawnRootObject != null)
-        {
-            var children = new List<Transform>();
-            foreach (Transform c in spawnRootObject) children.Add(c);
-
-            foreach (var tr in children)
-            {
-                if (tr == null) continue;
-                var pv = tr.GetComponent<PhotonView>();
-                if (pv == null || tr.gameObject.name.StartsWith(cubePrefab.name))
-                    Destroy(tr.gameObject);
-            }
-        }
-
-        // 전역에서 HullMarkerCube 류도 한 번 더 제거
-        var all = Resources.FindObjectsOfTypeAll<GameObject>();
-        for (int i = 0; i < all.Length; i++)
-        {
-            var g = all[i];
-            if (g == null) continue;
-            var n = g.name;
-            if (!string.IsNullOrEmpty(n) && n.StartsWith("HullMarkerCube"))
-                Destroy(g);
-        }
-    }
-
 }

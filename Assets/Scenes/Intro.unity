@@ -425,7 +425,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2565263483480027856, guid: 445915dc8698413468747c2fb539f935, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.2
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 2565263483480027856, guid: 445915dc8698413468747c2fb539f935, type: 3}
       propertyPath: m_LocalRotation.w
@@ -502,18 +502,18 @@ PrefabInstance:
     - target: {fileID: 2565263485106893872, guid: 445915dc8698413468747c2fb539f935, type: 3}
       propertyPath: managedReferences[4].OnClicked.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 968235017}
     - target: {fileID: 2565263485106893872, guid: 445915dc8698413468747c2fb539f935, type: 3}
       propertyPath: managedReferences[4].OnClicked.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2565263485106893872, guid: 445915dc8698413468747c2fb539f935, type: 3}
       propertyPath: managedReferences[4].OnClicked.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: StartGame
+      value: LoadTitleScene
       objectReference: {fileID: 0}
     - target: {fileID: 2565263485106893872, guid: 445915dc8698413468747c2fb539f935, type: 3}
       propertyPath: managedReferences[4].OnClicked.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: TitleManager, Assembly-CSharp
+      value: SceneNavigator, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 2565263485106893872, guid: 445915dc8698413468747c2fb539f935, type: 3}
       propertyPath: managedReferences[4].OnClicked.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -745,6 +745,7 @@ GameObject:
   m_Component:
   - component: {fileID: 968235015}
   - component: {fileID: 968235016}
+  - component: {fileID: 968235017}
   m_Layer: 0
   m_Name: Intro Manager
   m_TagString: Untagged
@@ -780,6 +781,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   nextSceneName: Title
+--- !u!114 &968235017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 968235014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98a1638b9c6fefe408ac55114590b13d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &988834302
 GameObject:
   m_ObjectHideFlags: 0

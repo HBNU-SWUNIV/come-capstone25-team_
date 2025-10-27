@@ -27,7 +27,7 @@ public class CarMove : MonoBehaviourPunCallbacks
     private Rigidbody rb;
     private RaceManager raceManager;
 
-    [SerializeField] private int goalLaps = 3;    // 차량별 목표 랩 수
+    [SerializeField] private int goalLaps = 2;    // 차량별 목표 랩 수
     private float prevProgress = 0f;
     private float lapProgress = 0f;               // 연속적인 랩 진행도 (0~goalLaps)
     private bool finished = false;
@@ -118,6 +118,7 @@ public class CarMove : MonoBehaviourPunCallbacks
         bool offTrack = horizDist > offTrackDistance || vertDist > offTrackHeight;
         if (offTrack)
         {
+            isMovingAllowed = false;
             RespawnAtProgress(lastSafeProgress);
             lastRespawnTime = Time.time;
         }
@@ -226,6 +227,22 @@ public class CarMove : MonoBehaviourPunCallbacks
             if (d < bestDist) { bestDist = d; bestT = t; }
         }
         return bestT;
+    }
+
+    #endregion
+
+    // ──────────────────────────────────────────
+    #region Public Control Methods
+
+    /// <summary>
+    /// 차량의 모든 움직임을 즉시 중지시킵니다. (Rigidbody를 Kinematic으로 설정)
+    /// </summary>
+    public void StopMovement()
+    {
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+        }
     }
 
     #endregion
