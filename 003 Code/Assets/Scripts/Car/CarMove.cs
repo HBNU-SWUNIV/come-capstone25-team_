@@ -30,7 +30,7 @@ public class CarMove : MonoBehaviourPunCallbacks
     [SerializeField] private int goalLaps = 2;    // 차량별 목표 랩 수
     private float prevProgress = 0f;
     private float lapProgress = 0f;               // 연속적인 랩 진행도 (0~goalLaps)
-    private bool finished = false;
+    public bool finished = false;
 
     // 스타트 지연
     private bool raceStarted = false;
@@ -258,6 +258,27 @@ public class CarMove : MonoBehaviourPunCallbacks
             if (effectHandler != null)
             {
                 effectHandler.ApplyItemEffect();
+            }
+        }
+    }
+    void OnCollisionEnter(Collision collision)
+    {
+        // 장애물 충돌 시 무적 예외처리
+        if (collision.gameObject.CompareTag("Obstacle"))
+        {
+            var effectHandler = GetComponent<ItemEffectHandler>();
+            if (effectHandler != null && effectHandler.IsInvincible())
+            {
+                Collider myCol = GetComponent<Collider>();
+                Collider obsCol = collision.collider;
+
+                if (myCol != null && obsCol != null)
+                {
+                    Physics.IgnoreCollision(myCol, obsCol, true); // 충돌 완전 비활성화
+                    Debug.Log("🛡 무적 상태 - 장애물 충돌 완전 무시 (유령 모드)");
+                }
+
+                return; // 아무 물리효과도 주지 않음
             }
         }
     }

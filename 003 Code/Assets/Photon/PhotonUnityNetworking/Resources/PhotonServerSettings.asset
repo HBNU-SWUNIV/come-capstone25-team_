@@ -61,6 +61,10 @@ MonoBehaviour:
   - RPC_RequestDeclareWinner
   - DestroySpawnedCubes
   - DestroySpawnedCubesMaster
+  - RPC_GetPulled
+  - RPC_HitByBomb
+  - RPC_SetInvincibility
+  - RPC_ShowExplosion
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
