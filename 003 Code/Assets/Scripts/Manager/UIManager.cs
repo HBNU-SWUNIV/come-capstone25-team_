@@ -78,22 +78,26 @@ public class UIManager : MonoBehaviourPun
     // 플레이어 대기 UI 활성화 여부
     public void PlayerWatingUI(bool active)
     {
+        if (playerWatingUI == null) return;
         playerWatingUI.SetActive(active);
     }
     // 오브젝트 선택 UI 활성화 여부
     public void ObjectSelectUI(bool active)
     {
+        if (objectSelectUI == null) return;
         objectSelectUI.SetActive(active);
     }
     // 마스터가 오브젝트 개수 선택 전까지 클라이언트 대기 UI 활성화 여부
     public void ClientWatingUI(bool active)
     {
+        if (clientWatingUI == null) return;
         clientWatingUI.SetActive(active);
     }
 
     // 게임 종료시 UI 활성화 및 위치 조정
     public void GameoverUI(bool isWinner)
     {
+        if (gameoverUI == null) return;
         gameoverUI.SetActive(true);
         gameResult.material = isWinner ? resultMaterials[0] : resultMaterials[1];
         PlaceObjectAtSplineCenter();
@@ -123,12 +127,16 @@ public class UIManager : MonoBehaviourPun
 
     public void OpenPopup(Material image)
     {
+        if (popupUI == null) return;
+        
         popupUI.SetActive(true);
         popupMesh.material = image;
     }
 
     public void ClosePopup()
     {
+        if (popupUI == null) return;
+        
         popupUI.SetActive(false);
     }
 }
