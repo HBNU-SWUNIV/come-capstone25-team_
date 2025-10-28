@@ -97,7 +97,7 @@ public class UIManager : MonoBehaviourPun
     // 게임 종료시 UI 활성화 및 위치 조정
     public void GameoverUI(bool isWinner)
     {
-        if (gameoverUI == null) return;
+        if (gameoverUI == null || gameResult == null || resultMaterials == null) return;
         gameoverUI.SetActive(true);
         gameResult.material = isWinner ? resultMaterials[0] : resultMaterials[1];
         PlaceObjectAtSplineCenter();
@@ -136,7 +136,7 @@ public class UIManager : MonoBehaviourPun
     public void ClosePopup()
     {
         if (popupUI == null) return;
-        
+
         popupUI.SetActive(false);
     }
 }
