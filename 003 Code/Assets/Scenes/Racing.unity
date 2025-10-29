@@ -1013,6 +1013,7 @@ GameObject:
   - component: {fileID: 582734157}
   - component: {fileID: 582734156}
   - component: {fileID: 582734159}
+  - component: {fileID: 582734160}
   m_Layer: 0
   m_Name: Spawn Manager
   m_TagString: Spline
@@ -1128,6 +1129,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Container: {fileID: 582734155}
+  m_TargetMesh: {fileID: 0}
   m_RebuildOnSplineChange: 1
   m_RebuildFrequency: 20
   m_UpdateColliders: 1
@@ -1168,7 +1170,8 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 268cfed989f84684fb2f83244c4605af, type: 2}
+  - {fileID: 2100000, guid: 7324fd1372e84d94cbc4460e8f2a4dff, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1192,7 +1195,7 @@ MeshRenderer:
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!33 &582734158
 MeshFilter:
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 8
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -1225,6 +1228,23 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 1
+--- !u!114 &582734160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 582734151}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05070d574e00c154994e5f306cdd8e2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  splineContainer: {fileID: 582734155}
+  splineExtrude: {fileID: 582734156}
+  roadMat: {fileID: 2100000, guid: 268cfed989f84684fb2f83244c4605af, type: 2}
+  curbMat: {fileID: 2100000, guid: 7324fd1372e84d94cbc4460e8f2a4dff, type: 2}
+  curbWidthRatio: 0.2
 --- !u!1 &604124335
 GameObject:
   m_ObjectHideFlags: 0
