@@ -1,15 +1,4 @@
-﻿// SpawnManager.cs
-// ------------------------------------------------------------
-// 변경 요약
-//  1) 트랙 생성 후: 물체인식 표시 전부 제거 + 선택 큐브 전부 삭제 + 추가 입력 차단
-//     - 표시 제거: TablePlaneDetector.ClearDetectedVisuals() 호출
-//     - 큐브 삭제: DestroySpawnedCubesMaster() (마스터가 일괄 파괴) + 로컬 보정 삭제
-//     - 입력 차단: trackFinalized 플래그 + 입력 핸들러 Unregister
-//  2) 1인 테스트(singlePlayerMode) 시, 턴 규칙 우회해 연속 스폰 가능 (유지)
-//  3) [원래 코드] 트랙 전 SpatialAwarenessSystem.Disable() 하던 부분 주석 처리
-// ------------------------------------------------------------
-
-using Microsoft.MixedReality.Toolkit;
+﻿using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.Input;
 using Microsoft.MixedReality.Toolkit.SpatialAwareness;   // Observer 제어
 using Microsoft.MixedReality.WorldLocking.Core;
@@ -199,6 +188,30 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
             splineExtrude.Radius = Mathf.Clamp(totalLength * 0.066f, 0.1f, 5f);
         }
 
+        // 도로 자동 Extrude & 머티리얼 분리
+        if (splineExtrude != null)
+        {
+            // 메시 재생성
+            splineExtrude.Rebuild();
+            Debug.Log("🔁 SplineExtrude.Rebuild() 자동 호출됨!");
+
+            // MultiMaterialSpline 자동 실행
+            var multiMat = splineExtrude.GetComponent<MultiMaterialSpline>();
+            if (multiMat != null)
+            {
+                // 0.1초 지연 후 적용 (Rebuild가 완료된 뒤)
+                splineExtrude.StartCoroutine(ApplyAfterDelay(multiMat, 0.1f));
+            }
+            else
+            {
+                Debug.LogWarning("⚠️ MultiMaterialSpline 컴포넌트를 찾을 수 없습니다. 머터리얼 분리 생략됨.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ SplineExtrude가 연결되어 있지 않습니다.");
+        }
+
         // SplineExtrude의 메쉬에 MeshCollider 자동 추가
         MeshFilter meshFilter = GetComponent<MeshFilter>();
         if (meshFilter != null && meshFilter.sharedMesh != null)
@@ -224,6 +237,11 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         // ----------------------------------------------------------------------
 
         StartCoroutine(WaitAndSpawnCar());
+    }
+    private IEnumerator ApplyAfterDelay(MultiMaterialSpline multiMat, float delay)
+    {
+        yield return new WaitForEndOfFrame();
+        multiMat.SendMessage("ApplyMultiMaterial", SendMessageOptions.DontRequireReceiver);
     }
 
     // 트랙 완성 후: 표시 제거 + 큐브 파괴(마스터) + 입력 차단 + Observer 정리
@@ -253,7 +271,7 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         {
             observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.Occlusion;
         }
-            
+
         CoreServices.SpatialAwarenessSystem.Disable();
     }
 
@@ -367,7 +385,7 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
 
         // 기존 로직 연결 (스플라인 생성, 차량/아이템 스폰)
         photonView.RPC("SpawnObject", RpcTarget.AllBuffered, cube.GetComponent<PhotonView>().ViewID);
-        
+
         cube.SetActive(false); // 스플라인 지점 등록 후 물체 비활성화 -> 중복으로 물체 보이는 문제 해결
     }
 
