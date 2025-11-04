@@ -12,6 +12,7 @@ public class SelectedObject : MonoBehaviourPunCallbacks
     {
         if (text)
         {
+            text.text = "Player" + photonView.Owner.ActorNumber + " Select"; // 선택한 플레이어 ID 표기
             // 내가 설치한 물체인 경우
             if (photonView.IsMine)
             {
