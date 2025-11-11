@@ -1254,6 +1254,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 604124336}
+  - component: {fileID: 604124337}
   m_Layer: 0
   m_Name: Player Waiting UI
   m_TagString: Untagged
@@ -1277,6 +1278,18 @@ Transform:
   - {fileID: 1236720604}
   m_Father: {fileID: 163221823}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &604124337
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 604124335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4af498f5cc6850448b990d4d7090f179, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &690174884
 GameObject:
   m_ObjectHideFlags: 0
@@ -1984,8 +1997,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   splineContainer: {fileID: 582734155}
-  itemPrefab: {fileID: 8447179562881371505, guid: 9a263038a7314ec498862cd287ee47ef, type: 3}
   splineExtrude: {fileID: 582734156}
+  itemPrefab: {fileID: 8447179562881371505, guid: 9a263038a7314ec498862cd287ee47ef, type: 3}
   spawnCount: 8
 --- !u!1 &1092378555
 GameObject:
@@ -1996,6 +2009,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1092378556}
+  - component: {fileID: 1092378557}
   m_Layer: 0
   m_Name: Client Wating UI
   m_TagString: Untagged
@@ -2019,6 +2033,18 @@ Transform:
   - {fileID: 1291186386}
   m_Father: {fileID: 163221823}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1092378557
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1092378555}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4af498f5cc6850448b990d4d7090f179, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1095084853
 GameObject:
   m_ObjectHideFlags: 0
@@ -2621,7 +2647,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2204069621426241315, guid: 3f1f46cbecbe08e46a303ccfdb5b498a, type: 3}
       propertyPath: m_Name
-      value: HowToPlay
+      value: CloseButton
       objectReference: {fileID: 0}
     - target: {fileID: 2204069621878992557, guid: 3f1f46cbecbe08e46a303ccfdb5b498a, type: 3}
       propertyPath: m_Mesh
@@ -2814,6 +2840,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1940492273}
+  - component: {fileID: 1940492274}
   m_Layer: 0
   m_Name: Object Select UI
   m_TagString: Untagged
@@ -2838,6 +2865,18 @@ Transform:
   - {fileID: 562404190}
   m_Father: {fileID: 163221823}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1940492274
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940492272}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4af498f5cc6850448b990d4d7090f179, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1971686199
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3050,6 +3089,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2075635420}
+  - component: {fileID: 2075635421}
   m_Layer: 0
   m_Name: Gameover UI
   m_TagString: Untagged
@@ -3073,6 +3113,18 @@ Transform:
   - {fileID: 263636256}
   m_Father: {fileID: 163221823}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2075635421
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2075635419}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4af498f5cc6850448b990d4d7090f179, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2078300786
 GameObject:
   m_ObjectHideFlags: 0

@@ -29,6 +29,11 @@ public class SelectedObject : MonoBehaviourPunCallbacks
         }
     }
 
+    void Update()
+    {
+        text.transform.rotation = Quaternion.LookRotation(transform.position - Camera.main.transform.position);
+    }
+
     // 물체 위치 고정 및 동기화
     [PunRPC]
     void SyncWorldLockedObject(Vector3 frozenPosition, Quaternion frozenRotation)
