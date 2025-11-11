@@ -67,7 +67,7 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
         }
 
         // 차량 크기에 맞춰 아이템 스케일 조절 (원본 로직)
-        var itemScale = carMove.GetSize() * 15f;
+        var itemScale = carMove.GetSize() * 10f;
 
         // 네트워크를 통해 아이템 시각 효과 생성
         currentItemVisual = PhotonNetwork.Instantiate(
@@ -138,8 +138,8 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
         else if (random < 85)
         {
             Debug.Log("⚡ 부스터 발동!");
-            StartCoroutine(ApplySpeedBoost(3f)); // 로컬에서만 속도 변경
-            ShowItemOnCar(boosterPrefab, 3f);
+            StartCoroutine(ApplySpeedBoost(1.5f)); // 로컬에서만 속도 변경
+            ShowItemOnCar(boosterPrefab, 1.5f);
         }
         else if (random < 95)
         {
@@ -410,7 +410,7 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
     {
         float originalSpeed = carMove.speed;
 
-        carMove.speed *= 2f;
+        carMove.speed *= 1.5f;
 
         yield return new WaitForSeconds(duration);
 
