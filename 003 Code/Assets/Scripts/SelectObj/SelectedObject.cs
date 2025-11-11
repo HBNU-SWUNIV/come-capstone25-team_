@@ -6,7 +6,7 @@ using TMPro;
 [RequireComponent(typeof(PhotonView))]
 public class SelectedObject : MonoBehaviourPunCallbacks
 {
-    public TextMeshPro text; // 텍스트 UI
+    public TMP_Text text; // 텍스트 UI
 
     private void OnEnable()
     {

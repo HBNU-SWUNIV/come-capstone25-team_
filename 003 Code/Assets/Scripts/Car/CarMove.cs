@@ -4,6 +4,7 @@ using Microsoft.MixedReality.Toolkit.Utilities;
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.Splines;
+using TMPro;
 
 [RequireComponent(typeof(Rigidbody))]
 public class CarMove : MonoBehaviourPunCallbacks
@@ -43,6 +44,9 @@ public class CarMove : MonoBehaviourPunCallbacks
     private float lastRespawnTime = -Mathf.Infinity;
     private bool isMovingAllowed = true; // 차량 이동 허용 플래그
 
+    [SerializeField] private ItemEffectHandler effectHandler;
+    [SerializeField] private TMP_Text playerNumberText;
+
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -65,6 +69,20 @@ public class CarMove : MonoBehaviourPunCallbacks
 
     private void FixedUpdate()
     {
+        if (playerNumberText)
+        {
+            if (photonView.IsMine)
+            {
+                playerNumberText.text = "Player" + photonView.Owner.ActorNumber;
+                playerNumberText.color = Color.green;
+            }
+            else
+            {
+                playerNumberText.text = "Player" + photonView.Owner.ActorNumber;
+                playerNumberText.color = Color.red;
+            }
+        }
+
         if (!photonView.IsMine || splineContainer == null) return;
 
         if (raceStarted)
@@ -254,8 +272,7 @@ public class CarMove : MonoBehaviourPunCallbacks
             Debug.Log("아이템 획득!");
             PhotonNetwork.Destroy(other.gameObject);
 
-            ItemEffectHandler effectHandler = GetComponent<ItemEffectHandler>();
-            if (effectHandler != null)
+            if (effectHandler)
             {
                 effectHandler.ApplyItemEffect();
             }
@@ -266,8 +283,7 @@ public class CarMove : MonoBehaviourPunCallbacks
         // 장애물 충돌 시 무적 예외처리
         if (collision.gameObject.CompareTag("Obstacle"))
         {
-            var effectHandler = GetComponent<ItemEffectHandler>();
-            if (effectHandler != null && effectHandler.IsInvincible())
+            if (effectHandler && effectHandler.IsInvincible())
             {
                 Collider myCol = GetComponent<Collider>();
                 Collider obsCol = collision.collider;
