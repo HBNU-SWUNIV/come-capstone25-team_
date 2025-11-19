@@ -281,8 +281,8 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
             if (TryGetComponent<Rigidbody>(out var rb))
             {
                 // 폭발 위치가 없으므로 대략적인 방향 설정
-                Vector3 forceDir = (Vector3.up * 0.7f) + (Random.insideUnitSphere * 0.3f);
-                rb.AddForce(forceDir * 200f, ForceMode.Impulse);
+                Vector3 forceDir = (Vector3.up * 0.7f) + (Random.insideUnitSphere * 0.4f);
+                rb.AddForce(forceDir * 400f, ForceMode.Impulse);
                 rb.AddTorque(Random.insideUnitSphere * 200f, ForceMode.Impulse);
             }
 
