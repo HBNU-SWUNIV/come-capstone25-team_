@@ -29,7 +29,6 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
     public GameObject hookPrefab;
 
     [Header("폭탄 / 갈고리 설정")]
-    public float bombThrowForce = 30f; // (원본 12 * 2.5)
     public float bombExplosionRadius = 3f;
     public float hookPullSpeed = 10f;
 
@@ -104,7 +103,7 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
     // (예: if (photonView.IsMine) { itemHandler.ApplyItemEffect(); })
     public void ApplyItemEffect()
     {
-        int random = Random.Range(0, 100);
+        int random = 45;
         Debug.Log($"[{photonView.Owner.NickName}] 랜덤 값: {random}");
 
         if (random < 15)
@@ -170,69 +169,53 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
             return;
         }
 
-        Vector3 spawnPos = transform.position + transform.forward * 1.0f + Vector3.up * 0.3f;
+        Vector3 spawnPos = transform.position + Vector3.up * 0.01f;
 
         // 폭탄을 네트워크에 생성 (중요: bombPrefab에 PhotonView, PhotonTransformView 필요)
         GameObject bomb = PhotonNetwork.Instantiate(bombPrefab.name, spawnPos, Quaternion.identity);
 
-        Rigidbody rb = bomb.GetComponent<Rigidbody>();
-        if (rb == null) rb = bomb.AddComponent<Rigidbody>();
-
-        // 폭탄의 물리 설정 (발사자 클라이언트에서만 설정)
-        rb.useGravity = false;
-        rb.isKinematic = false;
-        rb.linearDamping = 0f;
-        rb.angularDamping = 0f;
-        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-
+        // Lerp로 직접 위치 제어하므로 Rigidbody 불필요
         Vector3 targetPos = opponent.transform.position + Vector3.up * 0.1f;
         Vector3 dir = (targetPos - spawnPos).normalized;
-        rb.linearVelocity = dir * bombThrowForce;
         bomb.transform.rotation = Quaternion.LookRotation(dir);
 
         // 폭탄 추적 및 폭발 코루틴은 발사자(마스터 클라이언트 또는 소유자)만 실행
-        StartCoroutine(TrackAndExplode(bomb, opponent));
+        StartCoroutine(TrackAndExplode(bomb, opponent, spawnPos));
 
         Debug.Log($"💣 폭탄 발사! → 목표: {opponent.name}");
     }
 
     // (로컬) 폭탄 추적 코루틴
-    private IEnumerator TrackAndExplode(GameObject bomb, GameObject targetOpponent)
+    private IEnumerator TrackAndExplode(GameObject bomb, GameObject targetOpponent, Vector3 startPos)
     {
-        float minDistance = 2.5f;
-        float timeout = 6f;
+        float duration = 2f; // 정확히 2초 동안 이동
         float elapsed = 0f;
 
         // 이 코루틴은 폭탄의 소유자(발사자)만 실행
-        while (bomb != null && targetOpponent != null)
+        while (bomb != null && targetOpponent != null && elapsed < duration)
         {
             elapsed += Time.deltaTime;
-
-            Vector3 targetPos = targetOpponent.transform.position + Vector3.up * 0.1f;
-            Vector3 dir = (targetPos - bomb.transform.position).normalized;
-
-            Rigidbody rb = bomb.GetComponent<Rigidbody>();
-            if (rb != null)
+            
+            // 2초 동안 시작 위치에서 목표 위치로 Lerp
+            Vector3 targetPos = targetOpponent.transform.position;
+            float t = elapsed / duration; // 0에서 1로 증가
+            Vector3 newPos = Vector3.Lerp(startPos, targetPos, t);
+            bomb.transform.position = newPos;
+            
+            // 목표를 향해 회전
+            Vector3 dir = (targetPos - newPos).normalized;
+            if (dir != Vector3.zero)
             {
-                // PhotonTransformView가 이 속도를 다른 클라이언트에 동기화
-                rb.linearVelocity = dir * bombThrowForce;
-                rb.rotation = Quaternion.LookRotation(dir);
-            }
-
-            float dist = Vector3.Distance(bomb.transform.position, targetOpponent.transform.position);
-            if (dist <= minDistance || elapsed >= timeout)
-            {
-                ExplodeNow(bomb, targetOpponent);
-                yield break;
+                bomb.transform.rotation = Quaternion.LookRotation(dir);
             }
 
             yield return null;
         }
 
-        // 타겟이 사라지면 그냥 폭발
+        // 2초가 지나면 폭발
         if (bomb != null)
         {
-            ExplodeNow(bomb, null);
+            ExplodeNow(bomb, targetOpponent);
         }
     }
 
@@ -252,7 +235,7 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
         foreach (var col in hits)
         {
             // 상대방 차량인지 확인 (자신 제외)
-            var opponentHandler = col.GetComponent<ItemEffectHandler>();
+            var opponentHandler = col.GetComponentInParent<ItemEffectHandler>();
             if (opponentHandler != null && opponentHandler != this)
             {
                 // 3. 상대방이 무적인지 *로컬*에서 확인 (isInvincible은 RPC로 동기화됨)
@@ -292,15 +275,15 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
         // 이 RPC를 받은 클라이언트 중, 자신의 차인 경우에만 로직 실행
         if (photonView.IsMine)
         {
-            Debug.Log($"[{photonView.Owner.NickName}] 폭탄에 맞았습니다!");
+            Debug.Log($"[{photonView.Owner.ActorNumber}] 폭탄에 맞았습니다!");
 
             // 물리 반응 (위로 튕기기 + 회전)
             if (TryGetComponent<Rigidbody>(out var rb))
             {
                 // 폭발 위치가 없으므로 대략적인 방향 설정
                 Vector3 forceDir = (Vector3.up * 0.7f) + (Random.insideUnitSphere * 0.3f);
-                rb.AddForce(forceDir * 1500f, ForceMode.Impulse);
-                rb.AddTorque(Random.insideUnitSphere * 300f, ForceMode.Impulse);
+                rb.AddForce(forceDir * 200f, ForceMode.Impulse);
+                rb.AddTorque(Random.insideUnitSphere * 200f, ForceMode.Impulse);
             }
 
             // 2초간 조작 불가
