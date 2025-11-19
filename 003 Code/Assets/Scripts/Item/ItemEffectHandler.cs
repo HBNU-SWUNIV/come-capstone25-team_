@@ -103,7 +103,7 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
     // (예: if (photonView.IsMine) { itemHandler.ApplyItemEffect(); })
     public void ApplyItemEffect()
     {
-        int random = 45;
+        int random = Random.Range(0, 100);
         Debug.Log($"[{photonView.Owner.NickName}] 랜덤 값: {random}");
 
         if (random < 15)
@@ -287,7 +287,7 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
             }
 
             // 2초간 조작 불가
-            StartCoroutine(DisableControlTemporarily(2f));
+            StartCoroutine(DisableControlTemporarily(1f));
         }
     }
 
@@ -341,14 +341,15 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
         float elapsed = 0f;
 
         Vector3 startPos = transform.position;
+        // 원래 목표 위치: 끌어당기는 차의 바로 앞쪽
+        Vector3 originalEndPos = puller.transform.position - puller.transform.forward * 0.01f;
+        // 중간 위치에서 멈추도록 목표 위치를 중간 지점으로 설정
+        Vector3 endPos = Vector3.Lerp(startPos, originalEndPos, 0.5f);
 
         Debug.Log($"🪝 {puller.name}에게 끌려가기 시작");
         rb.isKinematic = true;
         while (elapsed < duration && puller != null)
         {
-            // 목표 위치: 끌어당기는 차의 바로 뒤쪽
-            Vector3 endPos = puller.transform.position - puller.transform.forward * 2.5f;
-
             float t = elapsed / duration;
             float smoothT = Mathf.SmoothStep(0, 1, t);
 
@@ -365,12 +366,8 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
             yield return null;
         }
 
-        // 최종 위치 정렬
-        if (puller != null)
-        {
-            Vector3 finalPos = puller.transform.position - puller.transform.forward * 2.5f;
-            rb.MovePosition(finalPos);
-        }
+        // 최종 위치 정렬 (중간 지점)
+        rb.MovePosition(endPos);
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
