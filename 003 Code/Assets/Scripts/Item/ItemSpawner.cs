@@ -14,7 +14,7 @@ public class ItemSpawner : MonoBehaviourPun
     
     [Header("리스폰 설정")]
     [Tooltip("아이템이 리스폰되기까지 걸리는 시간(초)")]
-    public float respawnTime = 5f;
+    public float respawnTime = 15f;
     
     private Dictionary<GameObject, Vector3> itemPositions = new Dictionary<GameObject, Vector3>();
     private Dictionary<GameObject, Quaternion> itemRotations = new Dictionary<GameObject, Quaternion>();
