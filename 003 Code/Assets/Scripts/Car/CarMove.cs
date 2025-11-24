@@ -65,6 +65,9 @@ public class CarMove : MonoBehaviourPunCallbacks
             previousIsMine = photonView.IsMine;
         }
         UpdatePlayerText();
+        
+        // 레이스 시작 전 움직임 중지
+        SetMovementEnabled(false);
         StartCoroutine(StartRaceAfterDelay());
     }
 
@@ -99,6 +102,7 @@ public class CarMove : MonoBehaviourPunCallbacks
     {
         yield return new WaitForSeconds(5f);  // 5초 대기 후 레이스 시작
         raceStarted = true;
+        SetMovementEnabled(true);  // 레이스 시작 시 움직임 활성화
     }
 
     private void FixedUpdate()
@@ -168,6 +172,7 @@ public class CarMove : MonoBehaviourPunCallbacks
     private void RespawnAtProgress(float t)
     {
         isMovingAllowed = false;
+        SetMovementEnabled(false);  // 리스폰 시 움직임 중지
         splineContainer.Spline.Evaluate(t, out var posF3, out var tanF3, out var upF3);
         Vector3 newPos = (Vector3)posF3 + (Vector3)upF3 * respawnLift;
         // 차량이 뒤집히는 것을 방지하기 위해 월드 '위' 방향을 기준으로 회전 설정
@@ -186,6 +191,7 @@ public class CarMove : MonoBehaviourPunCallbacks
     {
         yield return new WaitForSeconds(delay);
         isMovingAllowed = true;
+        SetMovementEnabled(true);  // 리스폰 대기 후 움직임 활성화
     }
 
     #endregion
@@ -273,13 +279,14 @@ public class CarMove : MonoBehaviourPunCallbacks
     #region Public Control Methods
 
     /// <summary>
-    /// 차량의 모든 움직임을 즉시 중지시킵니다. (Rigidbody를 Kinematic으로 설정)
+    /// 차량의 움직임을 제어합니다.
     /// </summary>
-    public void StopMovement()
+    /// <param name="enabled">true면 움직임 활성화, false면 움직임 중지</param>
+    public void SetMovementEnabled(bool enabled)
     {
         if (rb != null)
         {
-            rb.isKinematic = true;
+            rb.isKinematic = !enabled;
         }
     }
 
@@ -287,12 +294,31 @@ public class CarMove : MonoBehaviourPunCallbacks
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Item") && !effectHandler.hasItem())
+        if (other.CompareTag("Item"))
         {
-            Debug.Log("아이템 획득!");
-            
             // ItemSpawner를 찾아서 리스폰 로직 호출
             ItemSpawner itemSpawner = FindAnyObjectByType<ItemSpawner>();
+            
+            // 이미 아이템을 가지고 있는 경우, 박스만 파괴
+            if (effectHandler.hasItem())
+            {
+                Debug.Log("아이템 보유 중 - 박스만 파괴");
+                
+                if (itemSpawner != null)
+                {
+                    itemSpawner.OnItemCollected(other.gameObject);
+                }
+                else
+                {
+                    // ItemSpawner를 찾을 수 없으면 기존처럼 파괴
+                    PhotonNetwork.Destroy(other.gameObject);
+                }
+                return; // 아이템 효과는 적용하지 않음
+            }
+            
+            // 아이템을 가지고 있지 않은 경우, 정상적으로 획득
+            Debug.Log("아이템 획득!");
+            
             if (itemSpawner != null)
             {
                 itemSpawner.OnItemCollected(other.gameObject);

@@ -34,7 +34,7 @@ public class RaceManager : MonoBehaviourPun
         CarMove[] allCars = FindObjectsOfType<CarMove>();
         foreach (CarMove car in allCars)
         {
-            car.StopMovement();
+            car.SetMovementEnabled(false);
         }
 
         // 자신이 우승자인지 확인

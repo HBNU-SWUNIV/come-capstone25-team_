@@ -1924,7 +1924,6 @@ MonoBehaviour:
   oilRedPrefab: {fileID: 7243096277806350999, guid: 7144a51adebcd9e4e8f0468296adb983, type: 3}
   oilGreenPrefab: {fileID: 2965347479976651862, guid: 3da4f1f0dd45bf84e8cbc27b3bdefa36, type: 3}
   hookPrefab: {fileID: 6418621034354012311, guid: ba324f36200a8034ebc0b685d72a28ae, type: 3}
-  bombThrowForce: 30
   bombExplosionRadius: 3
   hookPullSpeed: 10
 --- !u!1 &1163069426437424
