@@ -5,6 +5,7 @@ using Photon.Pun;
 using UnityEngine;
 using UnityEngine.Splines;
 using TMPro;
+using Unity.Mathematics;
 
 [RequireComponent(typeof(Rigidbody))]
 public class CarMove : MonoBehaviourPunCallbacks
@@ -112,6 +113,18 @@ public class CarMove : MonoBehaviourPunCallbacks
         yield return new WaitForSeconds(5f);  // 5초 대기 후 레이스 시작
         raceStarted = true;
         SetMovementEnabled(true);  // 레이스 시작 시 움직임 활성화
+    }
+
+    private IEnumerator SetKinematicAfterPositionUpdate()
+    {
+        // 한 프레임 대기하여 위치 설정이 완료되도록 함
+        yield return new WaitForFixedUpdate();
+        
+        // 이제 kinematic을 true로 설정하여 움직임 비활성화
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+        }
     }
 
     private void FixedUpdate()
@@ -336,6 +349,112 @@ public class CarMove : MonoBehaviourPunCallbacks
                 rb.angularVelocity = Vector3.zero;
             }
         }
+    }
+
+    /// <summary>
+    /// 차량을 초기 상태로 리셋합니다. (게임 재시작 시 사용)
+    /// </summary>
+    public void ResetCar()
+    {
+        if (splineContainer == null) return;
+
+        // 진행도 및 랩 진행도 초기화
+        progress = 0f;
+        prevProgress = 0f;
+        lapProgress = 0f;
+        finished = false;
+        raceStarted = false;
+        lastSafeProgress = 0f;
+        lastRespawnTime = -Mathf.Infinity;
+
+        // 초기 위치 계산 (SpawnManager의 로직과 동일)
+        splineContainer.Spline.Evaluate(0f, out float3 posF3, out float3 tanF3, out float3 upF3);
+        Vector3 center = (Vector3)posF3;
+        Vector3 forward = ((Vector3)tanF3).normalized;
+        Vector3 up = ((Vector3)upF3).normalized;
+        Vector3 right = Vector3.Cross(up, forward).normalized;
+
+        // 차량의 초기 위치 결정 (ActorNumber 기준: 1번은 왼쪽, 2번은 오른쪽)
+        float laneOffset = 0.2f; // SplineExtrude의 Radius를 모르므로 기본값 사용
+        float heightLift = 0.1f;
+        
+        // SplineExtrude를 찾아서 정확한 오프셋 계산
+        SplineExtrude splineExtrude = FindAnyObjectByType<SplineExtrude>();
+        if (splineExtrude != null)
+        {
+            laneOffset = splineExtrude.Radius * 0.2f;
+            heightLift = splineExtrude.Radius * 0.1f;
+        }
+
+        Vector3 initialPos;
+        if (photonView != null && photonView.Owner != null)
+        {
+            // ActorNumber가 1이거나 홀수면 왼쪽, 짝수면 오른쪽
+            bool isLeft = (photonView.Owner.ActorNumber % 2 == 1);
+            initialPos = isLeft 
+                ? center - right * laneOffset + up * heightLift
+                : center + right * laneOffset + up * heightLift;
+        }
+        else
+        {
+            // 기본값: 왼쪽
+            initialPos = center - right * laneOffset + up * heightLift;
+        }
+
+        Quaternion initialRot = Quaternion.LookRotation(forward, up);
+
+        // 움직임 먼저 비활성화 (kinematic을 false로 설정하여 위치 변경 가능하게)
+        isMovingAllowed = false;
+        if (rb != null)
+        {
+            rb.isKinematic = false; // 위치 설정을 위해 먼저 kinematic 해제
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        // Rigidbody 위치 설정 (kinematic이 false일 때만 작동)
+        // transform을 먼저 설정한 후 Rigidbody를 동기화
+        transform.position = initialPos;
+        transform.rotation = initialRot;
+        
+        if (rb != null)
+        {
+            // Rigidbody의 position과 rotation을 직접 설정
+            rb.position = initialPos;
+            rb.rotation = initialRot;
+        }
+
+        // 네트워크 동기화 위치 강제 업데이트 (CarNetworkSync가 위치를 덮어쓰지 않도록)
+        CarNetworkSync networkSync = GetComponent<CarNetworkSync>();
+        if (networkSync != null)
+        {
+            networkSync.ResetNetworkPosition(initialPos, initialRot);
+        }
+
+        // 초기 속도 복원 (SpawnManager의 InitCar와 동일한 로직)
+        SplineExtrude splineExtrudeForSpeed = FindAnyObjectByType<SplineExtrude>();
+        if (splineExtrudeForSpeed != null)
+        {
+            speed = Mathf.Min(splineExtrudeForSpeed.Radius * 0.7f, 0.5f);
+        }
+
+        // 아이템 효과 초기화
+        if (effectHandler != null)
+        {
+            effectHandler.ResetEffects();
+        }
+
+        // 레이스 시작 코루틴 재시작 (먼저 중지)
+        StopAllCoroutines();
+        
+        // 움직임 비활성화 (레이스 시작 대기) - 위치 설정 후에 호출
+        // 코루틴에서 kinematic을 설정하도록 지연
+        StartCoroutine(SetKinematicAfterPositionUpdate());
+        
+        // 레이스 시작 코루틴 재시작
+        StartCoroutine(StartRaceAfterDelay());
+
+        Debug.Log($"[{photonView?.OwnerActorNr ?? -1}] 차량 리셋 완료 - 초기 위치: {initialPos}, 속도: {speed}");
     }
 
     #endregion

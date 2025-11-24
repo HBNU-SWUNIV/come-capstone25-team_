@@ -27,7 +27,7 @@ public class UIManager : MonoBehaviourPun
     public SplineContainer splineContainer;
 
     public int maxSpawnObjectCount { get; private set; } // 최대 물체 선택 개수
-
+    public RaceManager raceManager;
     private void Awake()
     {
         if (instance != null)
@@ -138,5 +138,20 @@ public class UIManager : MonoBehaviourPun
         if (popupUI == null) return;
 
         popupUI.SetActive(false);
+    }
+
+    /// <summary>
+    /// 게임 재시작 버튼에서 호출되는 메서드
+    /// </summary>
+    public void RestartGame()
+    {
+        if (raceManager != null)
+        {
+            raceManager.RequestRestartGame();
+        }
+        else
+        {
+            Debug.LogError("[UIManager] RaceManager를 찾을 수 없습니다!");
+        }
     }
 }

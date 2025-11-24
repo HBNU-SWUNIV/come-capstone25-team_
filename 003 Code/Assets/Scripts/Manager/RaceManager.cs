@@ -50,4 +50,75 @@ public class RaceManager : MonoBehaviourPun
             Debug.LogError("[RaceManager] UIManager.instance가 null입니다!");
         }
     }
+
+    /// <summary>게임 재시작 요청 (클라이언트 → 마스터)</summary>
+    public void RequestRestartGame()
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            RestartGame();
+        }
+        else
+        {
+            photonView.RPC(nameof(RPC_RequestRestartGame), RpcTarget.MasterClient);
+        }
+    }
+
+    /// <summary>클라이언트 → 마스터 : 재시작 요청</summary>
+    [PunRPC]
+    private void RPC_RequestRestartGame()
+    {
+        RestartGame();
+    }
+
+    /// <summary>마스터가 직접 호출 : 게임 재시작</summary>
+    public void RestartGame()
+    {
+        Debug.Log("[RaceManager] ▶ 게임 재시작 시작");
+        photonView.RPC(nameof(RPC_RestartGame), RpcTarget.All);
+    }
+
+    /// <summary>모든 클라이언트에서 실행 : 실제 게임 재시작</summary>
+    [PunRPC]
+    private void RPC_RestartGame()
+    {
+        Debug.Log("[RaceManager] ▶ RPC_RestartGame 수신");
+
+        // 게임 종료 상태 리셋
+        gameEnded = false;
+
+        // GameoverUI 비활성화
+        if (UIManager.instance != null)
+        {
+            if (UIManager.instance.gameoverUI != null)
+            {
+                UIManager.instance.gameoverUI.SetActive(false);
+            }
+        }
+
+        // 모든 차량 초기화
+        CarMove[] allCars = FindObjectsOfType<CarMove>();
+        foreach (CarMove car in allCars)
+        {
+            car.ResetCar();
+        }
+
+        // 아이템 재생성 (마스터만)
+        if (PhotonNetwork.IsMasterClient)
+        {
+            ItemSpawner itemSpawner = FindObjectOfType<ItemSpawner>();
+            if (itemSpawner != null)
+            {
+                Debug.Log("[RaceManager] 아이템 재생성 시작");
+                itemSpawner.SpawnItemsWithDelay();
+            }
+
+            ObstacleSpawner obstacleSpawner = FindObjectOfType<ObstacleSpawner>();
+            if (obstacleSpawner != null)
+            {
+                Debug.Log("[RaceManager] 장애물 재생성 시작");
+                obstacleSpawner.ClearAndRespawnObstacles();
+            }
+        }
+    }
 }

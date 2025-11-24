@@ -44,4 +44,24 @@ public class CarNetworkSync : MonoBehaviourPun, IPunObservable
             networkVelocity = (Vector3)stream.ReceiveNext();
         }
     }
+
+    /// <summary>
+    /// 네트워크 동기화 위치를 강제로 업데이트합니다. (게임 재시작 시 사용)
+    /// </summary>
+    public void ResetNetworkPosition(Vector3 position, Quaternion rotation)
+    {
+        networkPosition = position;
+        networkRotation = rotation;
+        networkVelocity = Vector3.zero;
+        
+        // 즉시 위치 적용 (보간 없이)
+        if (rb != null)
+        {
+            rb.position = position;
+            rb.rotation = rotation;
+            rb.linearVelocity = Vector3.zero;
+        }
+        
+        Debug.Log($"[CarNetworkSync] 네트워크 위치 리셋: {position}");
+    }
 }

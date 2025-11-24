@@ -3,6 +3,7 @@ using System.Collections;
 using Photon.Pun;
 using Photon.Realtime; // CustomProperties 사용을 위해 추가
 using ExitGames.Client.Photon; // CustomProperties 사용을 위해 추가
+using UnityEngine.Splines;
 
 // 이 스크립트는 PhotonView 컴포넌트와 함께 차량 오브젝트에 붙어있어야 합니다.
 [RequireComponent(typeof(PhotonView))]
@@ -511,6 +512,61 @@ public class ItemEffectHandler : MonoBehaviourPunCallbacks // MonoBehaviourPun �
     public bool hasItem()
     {
         return currentItemVisual != null;
+    }
+
+    /// <summary>
+    /// 모든 아이템 효과를 초기화합니다. (게임 재시작 시 사용)
+    /// </summary>
+    public void ResetEffects()
+    {
+        // 진행 중인 코루틴 중지
+        StopAllCoroutines();
+
+        // 무적 상태 해제
+        if (isInvincible)
+        {
+            isInvincible = false;
+            if (myCollider != null)
+            {
+                foreach (var obs in GameObject.FindGameObjectsWithTag("Obstacle"))
+                {
+                    Collider obsCol = obs.GetComponent<Collider>();
+                    if (obsCol != null)
+                    {
+                        Physics.IgnoreCollision(myCollider, obsCol, false);
+                    }
+                }
+            }
+        }
+
+        // 아이템 시각 효과 제거
+        if (currentItemVisual != null)
+        {
+            if (currentItemVisual.GetComponent<PhotonView>() != null && currentItemVisual.GetComponent<PhotonView>().IsMine)
+            {
+                PhotonNetwork.Destroy(currentItemVisual);
+            }
+            currentItemVisual = null;
+        }
+
+        // 속도 초기화 (기름통 효과 제거)
+        if (carMove != null)
+        {
+            // 초기 속도로 복원 (SpawnManager에서 설정한 속도)
+            SplineExtrude splineExtrude = FindObjectOfType<SplineExtrude>();
+            if (splineExtrude != null)
+            {
+                carMove.speed = Mathf.Min(splineExtrude.Radius * 0.7f, 0.5f);
+            }
+        }
+
+        // 금괴 수 초기화 (로컬 플레이어만)
+        if (photonView != null && photonView.IsMine)
+        {
+            SetGold(0);
+        }
+
+        Debug.Log($"[{photonView?.Owner?.NickName ?? "Unknown"}] 아이템 효과 초기화 완료");
     }
     #endregion
 

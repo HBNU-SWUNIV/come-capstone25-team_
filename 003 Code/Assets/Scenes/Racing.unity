@@ -398,14 +398,14 @@ PrefabInstance:
     - target: {fileID: 3640495471819635213, guid: 8e9607bc5dcaf684db874e9b032d5d89, type: 3}
       propertyPath: OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 690174886}
+      objectReference: {fileID: 780550431}
     - target: {fileID: 3640495471819635213, guid: 8e9607bc5dcaf684db874e9b032d5d89, type: 3}
       propertyPath: OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: ResetAndLoadTitleScene
+      value: RestartGame
       objectReference: {fileID: 0}
     - target: {fileID: 3640495471819635213, guid: 8e9607bc5dcaf684db874e9b032d5d89, type: 3}
       propertyPath: OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: SceneNavigator, Assembly-CSharp
+      value: UIManager, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 6180816493790233888, guid: 8e9607bc5dcaf684db874e9b032d5d89, type: 3}
       propertyPath: m_Mesh
@@ -1426,6 +1426,7 @@ MonoBehaviour:
   howToPlayMaterial: {fileID: 2100000, guid: d56dcfc3689d87f40b64bf8b8db1d8fe, type: 2}
   manualMaterial: {fileID: 2100000, guid: 5c992001e612dbc41a057c0704768413, type: 2}
   splineContainer: {fileID: 582734155}
+  raceManager: {fileID: 4570518}
 --- !u!114 &780550432
 MonoBehaviour:
   m_ObjectHideFlags: 0

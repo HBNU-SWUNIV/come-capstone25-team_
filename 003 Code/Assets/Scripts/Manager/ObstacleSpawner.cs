@@ -84,4 +84,29 @@ public class ObstacleSpawner : MonoBehaviourPun
 
         Debug.Log("✅ 장애물 생성 완료 (t 간격 기반 겹침 방지)");
     }
+
+    /// <summary>
+    /// 기존 장애물을 모두 제거하고 새로 생성합니다. (게임 재시작 시 사용)
+    /// </summary>
+    public void ClearAndRespawnObstacles()
+    {
+        // 기존 장애물 제거
+        foreach (Transform child in transform)
+        {
+            if (child.gameObject.CompareTag("Obstacle"))
+            {
+                PhotonView pv = child.GetComponent<PhotonView>();
+                if (pv != null && PhotonNetwork.IsMasterClient)
+                {
+                    PhotonNetwork.Destroy(child.gameObject);
+                }
+            }
+        }
+
+        // t값 리스트 초기화
+        placedTValues.Clear();
+
+        // 새 장애물 생성
+        SpawnObstacles();
+    }
 }

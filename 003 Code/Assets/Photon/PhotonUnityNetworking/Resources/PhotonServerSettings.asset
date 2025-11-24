@@ -67,6 +67,8 @@ MonoBehaviour:
   - RPC_ShowExplosion
   - RPC_CollectItem
   - RPC_RespawnItem
+  - RPC_RequestRestartGame
+  - RPC_RestartGame
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
