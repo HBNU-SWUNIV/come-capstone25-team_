@@ -1,5 +1,6 @@
 using Photon.Pun;
 using UnityEngine;
+using Microsoft.MixedReality.Toolkit.Utilities.Solvers;
 
 public class RaceManager : MonoBehaviourPun
 {
@@ -35,11 +36,21 @@ public class RaceManager : MonoBehaviourPun
         foreach (CarMove car in allCars)
         {
             car.SetMovementEnabled(false);
+            var indicator = car.GetComponentInChildren<DirectionalIndicator>();
+            if (indicator != null)
+            {
+                indicator.enabled = false;
+                var meshRenderer = indicator.GetComponent<MeshRenderer>();
+                if (meshRenderer != null)
+                {
+                    meshRenderer.enabled = false;
+                }
+            }
         }
 
         // 자신이 우승자인지 확인
         bool isWinner = PhotonNetwork.LocalPlayer.ActorNumber == winnerActorNumber;
-        
+
         // UIManager를 통해 게임 오버 UI 표시
         if (UIManager.instance != null)
         {
@@ -101,6 +112,16 @@ public class RaceManager : MonoBehaviourPun
         foreach (CarMove car in allCars)
         {
             car.ResetCar();
+            var indicator = car.GetComponentInChildren<DirectionalIndicator>();
+            if (indicator != null)
+            {
+                indicator.enabled = true;
+                var meshRenderer = indicator.GetComponent<MeshRenderer>();
+                if (meshRenderer != null)
+                {
+                    meshRenderer.enabled = true;
+                }
+            }
         }
 
         // 아이템 재생성 (마스터만)
