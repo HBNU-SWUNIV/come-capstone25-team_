@@ -31,6 +31,9 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
     // 트랙 완성 후 추가 입력/스폰 차단 플래그
     private bool trackFinalized = false;
 
+    // 게임 재시작 가능 여부 (레이싱 카가 모두 생성된 후 true)
+    public bool canRestart = false;
+
     private void Awake()
     {
         CoreServices.InputSystem.RegisterHandler<IMixedRealityPointerHandler>(this);
@@ -361,6 +364,9 @@ public class SpawnManager : MonoBehaviourPun, IMixedRealityPointerHandler
         {
             Debug.LogWarning("ObstacleSpawner를 찾지 못했습니다.");
         }
+
+        // 레이싱 카가 모두 생성된 후 재시작 가능하도록 설정
+        canRestart = true;
     }
 
     void InitCar(GameObject car, SplineExtrude splineExtrude)

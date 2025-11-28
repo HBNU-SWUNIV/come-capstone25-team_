@@ -145,6 +145,14 @@ public class UIManager : MonoBehaviourPun
     /// </summary>
     public void RestartGame()
     {
+        // 게임이 시작되지 않았으면 재시작 불가
+        SpawnManager spawnManager = splineContainer.GetComponent<SpawnManager>();
+        if (spawnManager == null || !spawnManager.canRestart)
+        {
+            Debug.LogWarning("[UIManager] 게임이 시작되지 않아 재시작할 수 없습니다.");
+            return;
+        }
+
         if (raceManager != null)
         {
             raceManager.RequestRestartGame();
